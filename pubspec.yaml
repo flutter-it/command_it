@@ -3,6 +3,10 @@ description: command_it is a way to manage your state based on `ValueListenable`
 version: 8.0.2
 homepage: https://github.com/flutter-it/command_it
 
+screenshots:
+  - description: 'command_it logo'
+    path: command_it.png
+
 environment:
   sdk: ">=3.5.0 <4.0.0"
 
