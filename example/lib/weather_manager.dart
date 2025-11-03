@@ -58,29 +58,28 @@ class WeatherManager {
 
     return httpStream
         .where(
-          (data) => data.statusCode == 200,
-        ) // only continue if valid response
+      (data) => data.statusCode == 200,
+    ) // only continue if valid response
         .map((data) {
-          // convert JSON result into a List of WeatherEntries
-          return WeatherInCities.fromJson(
-                json.decode(data.body) as Map<String, dynamic>,
-              )
-              .cities // we are only interested in the Cities part of the response
-              .where(
-                (weatherInCity) =>
-                    filtertext == null ||
-                    filtertext
-                        .isEmpty || // if filtertext is null or empty we return all returned entries
-                    weatherInCity.name.toUpperCase().startsWith(
+      // convert JSON result into a List of WeatherEntries
+      return WeatherInCities.fromJson(
+        json.decode(data.body) as Map<String, dynamic>,
+      )
+          .cities // we are only interested in the Cities part of the response
+          .where(
+            (weatherInCity) =>
+                filtertext == null ||
+                filtertext
+                    .isEmpty || // if filtertext is null or empty we return all returned entries
+                weatherInCity.name.toUpperCase().startsWith(
                       filtertext.toUpperCase(),
                     ),
-              ) // otherwise only matching entries
-              .map(
-                (weatherInCity) => WeatherEntry(weatherInCity),
-              ) // Convert City object to WeatherEntry
-              .toList(); // aggregate entries to a List
-        })
-        .first; // Return result as Future
+          ) // otherwise only matching entries
+          .map(
+            (weatherInCity) => WeatherEntry(weatherInCity),
+          ) // Convert City object to WeatherEntry
+          .toList(); // aggregate entries to a List
+    }).first; // Return result as Future
   }
 }
 
@@ -94,10 +93,9 @@ class WeatherEntry {
 
   WeatherEntry(City city) {
     this.cityName = city.name;
-    this.iconURL =
-        city.weather[0].icon != null
-            ? 'https://openweathermap.org/img/w/${city.weather[0].icon}.png'
-            : null;
+    this.iconURL = city.weather[0].icon != null
+        ? 'https://openweathermap.org/img/w/${city.weather[0].icon}.png'
+        : null;
     this.description = city.weather[0].description;
     this.wind = city.wind.speed.toDouble();
     this.rain = city.rain;

@@ -39,7 +39,7 @@ packages:
       path: ".."
       relative: true
     source: path
-    version: "1.0.0"
+    version: "8.0.1"
   flutter:
     dependency: "direct main"
     description: flutter
@@ -81,10 +81,10 @@ packages:
     dependency: "direct main"
     description:
       name: listen_it
-      sha256: dca2c41f8b2b133352bc439f7cf7b8a8c61d5f4c6de60fe13dbd2f1002f8a972
+      sha256: "516bfd486ca6fcb5d73c5640ed59e3c281a2871ee11863ffd4713e581b11c8d0"
       url: "https://pub.dev"
     source: hosted
-    version: "5.0.0"
+    version: "5.3.3"
   matcher:
     dependency: transitive
     description:
@@ -190,9 +190,9 @@ packages:
     dependency: transitive
     description:
       name: vector_math
-      sha256: "80b3257d1492ce4d091729e3a67a60407d227c27241d6927be0130c98e741803"
+      sha256: d530bd74fea330e6e364cda7a85019c434070188383e1cd8d9777ee586914c5b
       url: "https://pub.dev"
     source: hosted
-    version: "2.1.4"
+    version: "2.2.0"
 sdks:
-  dart: ">=3.7.0-0 <4.0.0"
+  dart: ">=3.8.0-0 <4.0.0"

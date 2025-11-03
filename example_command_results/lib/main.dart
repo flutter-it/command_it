@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
-import 'package:flutter_weather_demo/weather_manager.dart';
 
 import 'homepage_command_builder.dart';
+import 'weather_manager.dart';
 
 void main() => runApp(MyApp());
 

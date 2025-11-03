@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
-import 'package:flutter_weather_demo/weather_manager.dart';
+
+import 'weather_manager.dart';
 
 class WeatherListView extends StatelessWidget {
   final List<WeatherEntry> data;

@@ -57,20 +57,18 @@ class MockCommand<TParam, TResult> extends Command<TParam, TResult?> {
     // ignore: avoid_print
     print('Called Execute');
     if (returnValuesForNextExecute != null) {
-      returnValuesForNextExecute!
-          .map((entry) {
-            if ((entry.isExecuting || entry.hasError) &&
-                _includeLastResultInCommandResults) {
-              return CommandResult<TParam, TResult>(
-                param,
-                value,
-                entry.error,
-                entry.isExecuting,
-              );
-            }
-            return entry;
-          })
-          .forEach((x) => _commandResult.value = x);
+      returnValuesForNextExecute!.map((entry) {
+        if ((entry.isExecuting || entry.hasError) &&
+            _includeLastResultInCommandResults) {
+          return CommandResult<TParam, TResult>(
+            param,
+            value,
+            entry.error,
+            entry.isExecuting,
+          );
+        }
+        return entry;
+      }).forEach((x) => _commandResult.value = x);
     } else if (_noReturnValue) {
       notifyListeners();
     } else {

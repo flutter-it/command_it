@@ -1,9 +1,9 @@
 import 'package:command_it/command_it.dart';
 import 'package:flutter/material.dart';
-import 'package:flutter_weather_demo/weather_manager.dart';
 
 import 'listview.dart';
 import 'main.dart';
+import 'weather_manager.dart';
 
 class HomePage extends StatefulWidget {
   @override
@@ -35,8 +35,7 @@ class _HomePageState extends State<HomePage> {
           Expanded(
             // Handle events to show / hide spinner
             child: ValueListenableBuilder<
-              CommandResult<String?, List<WeatherEntry>>
-            >(
+                CommandResult<String?, List<WeatherEntry>>>(
               valueListenable: weatherManager.updateWeatherCommand.results,
               builder: (BuildContext context, result, _) {
                 if (result.isExecuting) {
@@ -74,10 +73,9 @@ class _HomePageState extends State<HomePage> {
                         weatherManager.updateWeatherCommand.canExecute,
                     builder: (BuildContext context, bool canExecute, _) {
                       // Depending on the value of canExecute we set or clear the Handler
-                      final handler =
-                          canExecute
-                              ? weatherManager.updateWeatherCommand
-                              : null;
+                      final handler = canExecute
+                          ? weatherManager.updateWeatherCommand
+                          : null;
                       return ElevatedButton(
                         child: Text('Update'),
                         style: ElevatedButton.styleFrom(

@@ -659,18 +659,24 @@ void main() {
       expect(executionCount, 2);
 
       // Verify all the necessary collectors
-      expect(canExecuteCollector.values, [
-        false,
-        true,
-        false,
-        true,
-      ], reason: 'CanExecute order is wrong');
-      expect(isExecutingCollector.values, [
-        true,
-        false,
-        true,
-        false,
-      ], reason: 'IsExecuting order is wrong.');
+      expect(
+          canExecuteCollector.values,
+          [
+            false,
+            true,
+            false,
+            true,
+          ],
+          reason: 'CanExecute order is wrong');
+      expect(
+          isExecutingCollector.values,
+          [
+            true,
+            false,
+            true,
+            false,
+          ],
+          reason: 'IsExecuting order is wrong.');
       expect(pureResultCollector.values, ['Done', 'Done2']);
       expect(cmdResultCollector.values, [
         const CommandResult<String, String>('Done', null, null, true),
@@ -713,18 +719,24 @@ void main() {
         expect(executionCount, 2);
 
         // Verify all the necessary collectors
-        expect(canExecuteCollector.values, [
-          false,
-          true,
-          false,
-          true,
-        ], reason: 'CanExecute order is wrong');
-        expect(isExecutingCollector.values, [
-          true,
-          false,
-          true,
-          false,
-        ], reason: 'IsExecuting order is wrong.');
+        expect(
+            canExecuteCollector.values,
+            [
+              false,
+              true,
+              false,
+              true,
+            ],
+            reason: 'CanExecute order is wrong');
+        expect(
+            isExecutingCollector.values,
+            [
+              true,
+              false,
+              true,
+              false,
+            ],
+            reason: 'IsExecuting order is wrong.');
         expect(pureResultCollector.values, ['Done', 'Done2']);
         expect(cmdResultCollector.values, [
           const CommandResult<String, String>(
@@ -975,9 +987,9 @@ void main() {
         int executionCount = 0;
         final Command commandForNotificationTest =
             Command.createAsync<String, String>((s) async {
-              executionCount++;
-              return slowAsyncFunction(s);
-            }, initialValue: 'Initial Value');
+          executionCount++;
+          return slowAsyncFunction(s);
+        }, initialValue: 'Initial Value');
         setupCollectors(commandForNotificationTest);
         expect(
           commandForNotificationTest.isExecuting.value,
@@ -1021,9 +1033,9 @@ void main() {
       int executionCount = 0;
       final Command commandForNotificationTest =
           Command.createAsync<String, String>((s) async {
-            executionCount++;
-            return slowAsyncFunction(s);
-          }, initialValue: 'Initial Value');
+        executionCount++;
+        return slowAsyncFunction(s);
+      }, initialValue: 'Initial Value');
       setupCollectors(commandForNotificationTest);
       expect(
         commandForNotificationTest.isExecuting.value,
@@ -1064,13 +1076,13 @@ void main() {
       int executionCount = 0;
       final Command commandForNotificationTest =
           Command.createAsync<String, String>(
-            (s) async {
-              executionCount++;
-              return slowAsyncFunction(s);
-            },
-            initialValue: 'Initial Value',
-            notifyOnlyWhenValueChanges: true,
-          );
+        (s) async {
+          executionCount++;
+          return slowAsyncFunction(s);
+        },
+        initialValue: 'Initial Value',
+        notifyOnlyWhenValueChanges: true,
+      );
       setupCollectors(commandForNotificationTest);
       expect(
         commandForNotificationTest.isExecuting.value,
@@ -1112,14 +1124,14 @@ void main() {
       int executionCount = 0;
       final Command commandForNotificationTest =
           Command.createAsync<String, String>(
-            (s) async {
-              executionCount++;
-              return slowAsyncFunction(s);
-            },
-            initialValue: 'Initial Value',
-            // ignore: avoid_redundant_argument_values
-            notifyOnlyWhenValueChanges: false,
-          );
+        (s) async {
+          executionCount++;
+          return slowAsyncFunction(s);
+        },
+        initialValue: 'Initial Value',
+        // ignore: avoid_redundant_argument_values
+        notifyOnlyWhenValueChanges: false,
+      );
       setupCollectors(commandForNotificationTest);
       expect(
         commandForNotificationTest.isExecuting.value,
@@ -1198,9 +1210,9 @@ void main() {
 
     testWidgets('Test Command Builder On error', (WidgetTester tester) async {
       final testCommand = Command.createAsyncNoParam<String>(() async {
-          await Future<void>.delayed(const Duration(seconds: 2));
-          throw CustomException('Exception From Command');
-        }, initialValue: 'Initial Value')
+        await Future<void>.delayed(const Duration(seconds: 2));
+        throw CustomException('Exception From Command');
+      }, initialValue: 'Initial Value')
         ..errors.listen((error, _) {
           print('Error: $error');
         });
@@ -1291,9 +1303,9 @@ void main() {
 
     testWidgets('Test toWidget with Error', (WidgetTester tester) async {
       final testCommand = Command.createAsyncNoParam<String>(() async {
-          await Future<void>.delayed(const Duration(seconds: 2));
-          throw CustomException('Exception From Command');
-        }, initialValue: 'Initial Value')
+        await Future<void>.delayed(const Duration(seconds: 2));
+        throw CustomException('Exception From Command');
+      }, initialValue: 'Initial Value')
         ..errors.listen((error, _) {
           print('Error: $error');
         });
@@ -1356,12 +1368,11 @@ void main() {
             undoStack.push(42);
             return Future.error(CustomException('Intentional'));
           },
-          undo:
-              (undoStack, error) => {
-                reason = error,
-                undoCount++,
-                undoValue = undoStack.pop(),
-              },
+          undo: (undoStack, error) => {
+            reason = error,
+            undoCount++,
+            undoValue = undoStack.pop(),
+          },
           errorFilter: ErrorFilerConstant(ErrorReaction.none),
         );
 

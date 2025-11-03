@@ -39,8 +39,8 @@ class UndoException implements Exception {
 /// command manually.
 /// If the function has a return value, it will be assigned to the command's result
 /// and value.
-typedef UndoFn<TUndoState, TResult> =
-    FutureOr<TResult> Function(UndoStack<TUndoState> undoStack, Object? reason);
+typedef UndoFn<TUndoState, TResult> = FutureOr<TResult> Function(
+    UndoStack<TUndoState> undoStack, Object? reason);
 
 class UndoableCommand<TParam, TResult, TUndoState>
     extends CommandAsync<TParam, TResult> {
@@ -63,10 +63,10 @@ class UndoableCommand<TParam, TResult, TUndoState>
     required super.notifyOnlyWhenValueChanges,
     required super.name,
     required super.noParamValue,
-  }) : _undoableFunc = func,
-       _undoableFuncNoParam = funcNoParam,
-       _undofunc = undo,
-       _undoOnExecutionFailure = undoOnExecutionFailure {
+  })  : _undoableFunc = func,
+        _undoableFuncNoParam = funcNoParam,
+        _undofunc = undo,
+        _undoOnExecutionFailure = undoOnExecutionFailure {
     _func = func != null ? (param) => _undoableFunc!(param, _undoStack) : null;
     _funcNoParam =
         funcNoParam != null ? () => _undoableFuncNoParam!(_undoStack) : null;

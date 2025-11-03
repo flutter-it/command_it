@@ -15,15 +15,14 @@ class _HomePageState extends State<HomePage> {
   @override
   void didChangeDependencies() {
     errorSubscription ??= weatherManager.updateWeatherCommand.errors
-    // .where((x) => x != null) // filter out the error value reset
-    .listen((error, _) {
+        // .where((x) => x != null) // filter out the error value reset
+        .listen((error, _) {
       showDialog<void>(
         context: context,
-        builder:
-            (context) => AlertDialog(
-              title: const Text('An error has occured!'),
-              content: Text(error.toString()),
-            ),
+        builder: (context) => AlertDialog(
+          title: const Text('An error has occured!'),
+          content: Text(error.toString()),
+        ),
       );
     });
     super.didChangeDependencies();
@@ -87,10 +86,9 @@ class _HomePageState extends State<HomePage> {
                         weatherManager.updateWeatherCommand.canExecute,
                     builder: (BuildContext context, bool canExecute, _) {
                       // Depending on the value of canExecute we set or clear the Handler
-                      final handler =
-                          canExecute
-                              ? weatherManager.updateWeatherCommand
-                              : null;
+                      final handler = canExecute
+                          ? weatherManager.updateWeatherCommand
+                          : null;
                       return ElevatedButton(
                         child: Text('Update'),
                         style: ElevatedButton.styleFrom(

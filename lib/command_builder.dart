@@ -10,7 +10,7 @@ class CommandBuilder<TParam, TResult> extends StatelessWidget {
   /// If your command has a return value, you can use this builder to build a widget
   /// when the command is executed successfully.
   final Widget Function(BuildContext context, TResult data, TParam? param)?
-  onData;
+      onData;
 
   /// If the command has no return value or returns null, this builder will be called when the
   /// command is executed successfully.
@@ -19,15 +19,13 @@ class CommandBuilder<TParam, TResult> extends StatelessWidget {
     BuildContext context,
     TResult? lastValue,
     TParam? param,
-  )?
-  whileExecuting;
+  )? whileExecuting;
   final Widget Function(
     BuildContext context,
     Object,
     TResult? lastValue,
     TParam?,
-  )?
-  onError;
+  )? onError;
 
   const CommandBuilder({
     required this.command,
@@ -46,23 +44,19 @@ class CommandBuilder<TParam, TResult> extends StatelessWidget {
       valueListenable: command.results,
       builder: (context, result, _) {
         return result.toWidget(
-          onData:
-              onData != null
-                  ? (data, paramData) => onData!.call(context, data, paramData)
-                  : null,
-          onSuccess:
-              onSuccess != null
-                  ? (paramData) => onSuccess!.call(context, paramData)
-                  : null,
-          onNullData:
-              onNullData != null
-                  ? (paramData) => onNullData!.call(context, paramData)
-                  : null,
-          whileExecuting:
-              whileExecuting != null
-                  ? (lastData, paramData) =>
-                      whileExecuting!.call(context, lastData, paramData)
-                  : null,
+          onData: onData != null
+              ? (data, paramData) => onData!.call(context, data, paramData)
+              : null,
+          onSuccess: onSuccess != null
+              ? (paramData) => onSuccess!.call(context, paramData)
+              : null,
+          onNullData: onNullData != null
+              ? (paramData) => onNullData!.call(context, paramData)
+              : null,
+          whileExecuting: whileExecuting != null
+              ? (lastData, paramData) =>
+                  whileExecuting!.call(context, lastData, paramData)
+              : null,
           onError: (lastData, error, paramData) {
             if (onError == null) {
               return const SizedBox();

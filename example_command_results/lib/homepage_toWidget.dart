@@ -1,9 +1,9 @@
-import 'package:flutter/material.dart';
 import 'package:command_it/command_it.dart';
-import 'package:flutter_weather_demo/main.dart';
-import 'package:flutter_weather_demo/weather_manager.dart';
+import 'package:flutter/material.dart';
 
 import 'listview.dart';
+import 'main.dart';
+import 'weather_manager.dart';
 
 class HomePage extends StatefulWidget {
   @override
@@ -35,29 +35,26 @@ class _HomePageState extends State<HomePage> {
           Expanded(
             // Handle events to show / hide spinner
             child: ValueListenableBuilder<
-              CommandResult<String?, List<WeatherEntry>>
-            >(
+                CommandResult<String?, List<WeatherEntry>>>(
               valueListenable: weatherManager.updateWeatherCommand.results,
               builder: (BuildContext context, result, _) {
                 return result.toWidget(
-                  whileExecuting:
-                      (lastValue, _) => Center(
-                        child: SizedBox(
-                          width: 50.0,
-                          height: 50.0,
-                          child: CircularProgressIndicator(),
-                        ),
-                      ),
+                  whileExecuting: (lastValue, _) => Center(
+                    child: SizedBox(
+                      width: 50.0,
+                      height: 50.0,
+                      child: CircularProgressIndicator(),
+                    ),
+                  ),
                   onData: (data, _) => WeatherListView(data),
-                  onError:
-                      (error, lastValue, paramData) => Column(
-                        children: [
-                          Text('An Error has occurred!'),
-                          Text(result.error.toString()),
-                          if (result.error != null)
-                            Text('For search term: ${result.paramData}'),
-                        ],
-                      ),
+                  onError: (error, lastValue, paramData) => Column(
+                    children: [
+                      Text('An Error has occurred!'),
+                      Text(result.error.toString()),
+                      if (result.error != null)
+                        Text('For search term: ${result.paramData}'),
+                    ],
+                  ),
                 );
               },
             ),
@@ -73,10 +70,9 @@ class _HomePageState extends State<HomePage> {
                         weatherManager.updateWeatherCommand.canExecute,
                     builder: (BuildContext context, bool canExecute, _) {
                       // Depending on the value of canEcecute we set or clear the Handler
-                      final handler =
-                          canExecute
-                              ? weatherManager.updateWeatherCommand
-                              : null;
+                      final handler = canExecute
+                          ? weatherManager.updateWeatherCommand
+                          : null;
                       return ElevatedButton(
                         child: Text('Update'),
                         style: ElevatedButton.styleFrom(

@@ -47,7 +47,7 @@ class CommandResult<TParam, TResult> {
   });
 
   const CommandResult.data(TParam? param, TResult data)
-    : this(param, data, null, false);
+      : this(param, data, null, false);
 
   const CommandResult.error(
     TParam? param,
@@ -55,16 +55,16 @@ class CommandResult<TParam, TResult> {
     ErrorReaction errorReaction,
     StackTrace? stackTrace,
   ) : this(
-        param,
-        null,
-        error,
-        false,
-        errorReaction: errorReaction,
-        stackTrace: stackTrace,
-      );
+          param,
+          null,
+          error,
+          false,
+          errorReaction: errorReaction,
+          stackTrace: stackTrace,
+        );
 
   const CommandResult.isLoading([TParam? param])
-    : this(param, null, null, true);
+      : this(param, null, null, true);
 
   const CommandResult.blank() : this(null, null, null, false);
 
@@ -85,11 +85,11 @@ class CommandResult<TParam, TResult> {
 
   @override
   int get hashCode => hash4(
-    data.hashCode,
-    error.hashCode,
-    isExecuting.hashCode,
-    paramData.hashCode,
-  );
+        data.hashCode,
+        error.hashCode,
+        isExecuting.hashCode,
+        paramData.hashCode,
+      );
 
   @override
   String toString() {
@@ -177,20 +177,19 @@ abstract class Command<TParam, TResult> extends CustomValueNotifier<TResult> {
     ErrorFilter? errorFilter,
     required String? name,
     required bool noParamValue,
-  }) : _restriction = restriction,
-       _ifRestrictedExecuteInstead = ifRestrictedExecuteInstead,
-       _noReturnValue = noReturnValue,
-       _noParamValue = noParamValue,
-       _includeLastResultInCommandResults = includeLastResultInCommandResults,
-       _errorFilter = errorFilter ?? errorFilterDefault,
-       _name = name,
-       super(
-         initialValue,
-         mode:
-             notifyOnlyWhenValueChanges
-                 ? CustomNotifierMode.normal
-                 : CustomNotifierMode.always,
-       ) {
+  })  : _restriction = restriction,
+        _ifRestrictedExecuteInstead = ifRestrictedExecuteInstead,
+        _noReturnValue = noReturnValue,
+        _noParamValue = noParamValue,
+        _includeLastResultInCommandResults = includeLastResultInCommandResults,
+        _errorFilter = errorFilter ?? errorFilterDefault,
+        _name = name,
+        super(
+          initialValue,
+          mode: notifyOnlyWhenValueChanges
+              ? CustomNotifierMode.normal
+              : CustomNotifierMode.always,
+        ) {
     _commandResult = CustomValueNotifier<CommandResult<TParam?, TResult>>(
       CommandResult.data(null, initialValue),
     );
@@ -199,17 +198,17 @@ abstract class Command<TParam, TResult> extends CustomValueNotifier<TResult> {
     _commandResult
         .where((x) => x.hasError && x.errorReaction!.shouldCallLocalHandler)
         .listen((x, _) {
-          final originalError = CommandError<TParam>(
-            paramData: x.paramData,
-            error: x.error!,
-            command: this,
-            errorReaction: x.errorReaction!,
-            stackTrace: x.stackTrace,
-          );
-          _errors.value = originalError;
-          _errors.notifyListeners(
-            reportErrorHandlerExceptionsToGlobalHandler
-                ? (error, stackTrace) => {
+      final originalError = CommandError<TParam>(
+        paramData: x.paramData,
+        error: x.error!,
+        command: this,
+        errorReaction: x.errorReaction!,
+        stackTrace: x.stackTrace,
+      );
+      _errors.value = originalError;
+      _errors.notifyListeners(
+        reportErrorHandlerExceptionsToGlobalHandler
+            ? (error, stackTrace) => {
                   globalExceptionHandler?.call(
                     CommandError<TParam>(
                       error: error,
@@ -220,23 +219,21 @@ abstract class Command<TParam, TResult> extends CustomValueNotifier<TResult> {
                     stackTrace,
                   ),
                 }
-                : null,
-          );
-        });
+            : null,
+      );
+    });
 
     // /// forward busy states to the `isExecuting` Listenable
     // _commandResult.listen((x, _) => _isExecuting.value = x.isExecuting);
 
     /// Merge the external execution restricting with the internal
     /// isExecuting which also blocks execution if true
-    _canExecute =
-        (_restriction == null)
-            ? _isExecuting.map((val) => !val) as ValueNotifier<bool>
-            : _restriction.combineLatest<bool, bool>(
-                  _isExecuting,
-                  (restriction, isExecuting) => !restriction && !isExecuting,
-                )
-                as ValueNotifier<bool>;
+    _canExecute = (_restriction == null)
+        ? _isExecuting.map((val) => !val) as ValueNotifier<bool>
+        : _restriction.combineLatest<bool, bool>(
+            _isExecuting,
+            (restriction, isExecuting) => !restriction && !isExecuting,
+          ) as ValueNotifier<bool>;
 
     /// decouple the async isExecuting from the sync isExecuting
     /// so that _canExecute will update immediately
@@ -350,10 +347,9 @@ abstract class Command<TParam, TResult> extends CustomValueNotifier<TResult> {
     Object error,
     TParam? param,
   ) {
-    StackTrace chain =
-        Command.detailedStackTraces
-            ? _improveStacktrace(stacktrace).terse
-            : stacktrace;
+    StackTrace chain = Command.detailedStackTraces
+        ? _improveStacktrace(stacktrace).terse
+        : stacktrace;
 
     if (Command.assertionsAlwaysThrow && error is AssertionError) {
       Error.throwWithStackTrace(error, chain);
@@ -444,7 +440,7 @@ abstract class Command<TParam, TResult> extends CustomValueNotifier<TResult> {
   /// the [name] of the Command that was responsible for the error is inside
   /// the error object.
   static void Function(CommandError<dynamic> error, StackTrace stackTrace)?
-  globalExceptionHandler;
+      globalExceptionHandler;
 
   /// if no individual ErrorFilter is set when creating a Command
   /// this filter is used in case of an error
@@ -493,8 +489,7 @@ abstract class Command<TParam, TResult> extends CustomValueNotifier<TResult> {
   static void Function(
     String? commandName,
     CommandResult<dynamic, dynamic> result,
-  )?
-  loggingHandler;
+  )? loggingHandler;
 
   /// as we don't want that anyone changes the values of these ValueNotifiers
   /// properties we make them private and only publish their `ValueListenable`
@@ -511,9 +506,9 @@ abstract class Command<TParam, TResult> extends CustomValueNotifier<TResult> {
   late final ValueListenable<bool>? _restriction;
   final CustomValueNotifier<CommandError<TParam>?> _errors =
       CustomValueNotifier<CommandError<TParam>?>(
-        null,
-        mode: CustomNotifierMode.manual,
-      );
+    null,
+    mode: CustomNotifierMode.manual,
+  );
 
   /// If you don't need a command any longer it is a good practise to
   /// dispose it to make sure all registered notification handlers are remove to
@@ -712,44 +707,43 @@ abstract class Command<TParam, TResult> extends CustomValueNotifier<TResult> {
   Chain _improveStacktrace(StackTrace stacktrace) {
     var trace = Trace.from(stacktrace);
 
-    final strippedFrames =
-        trace.frames
-            .where(
-              (frame) => switch (frame) {
-                Frame(package: 'stack_trace') => false,
-                Frame(:final member) when member!.contains('Zone') => false,
-                Frame(:final member) when member!.contains('_rootRun') => false,
-                Frame(package: 'command_it', :final member)
-                    when member!.contains('_execute') =>
-                  false,
-                _ => true,
-              },
+    final strippedFrames = trace.frames
+        .where(
+          (frame) => switch (frame) {
+            Frame(package: 'stack_trace') => false,
+            Frame(:final member) when member!.contains('Zone') => false,
+            Frame(:final member) when member!.contains('_rootRun') => false,
+            Frame(package: 'command_it', :final member)
+                when member!.contains('_execute') =>
+              false,
+            _ => true,
+          },
 
-              /// leave that for now, not 100% sure if it's better
-              // return switch ((frame.package, frame.member)) {
-              //   ('stack_trace', _) => false,
-              //   (_, final member) when member!.contains('Zone') => false,
-              //   (_, final member) when member!.contains('_rootRun') => false,
-              //   ('command_it', final member) when member!.contains('_execute') =>
-              //     false,
-              //   _ => true
-              // };
-              // if (frame.package == 'stack_trace') {
-              //   return false;
-              // }
-              // if (frame.member?.contains('Zone') == true) {
-              //   return false;
-              // }
-              // if (frame.member?.contains('_rootRun') == true) {
-              //   return false;
-              // }
-              // if (frame.package == 'command_it' &&
-              //     frame.member!.contains('_execute')) {
-              //   return false;
-              // }
-              // return true;
-            )
-            .toList();
+          /// leave that for now, not 100% sure if it's better
+          // return switch ((frame.package, frame.member)) {
+          //   ('stack_trace', _) => false,
+          //   (_, final member) when member!.contains('Zone') => false,
+          //   (_, final member) when member!.contains('_rootRun') => false,
+          //   ('command_it', final member) when member!.contains('_execute') =>
+          //     false,
+          //   _ => true
+          // };
+          // if (frame.package == 'stack_trace') {
+          //   return false;
+          // }
+          // if (frame.member?.contains('Zone') == true) {
+          //   return false;
+          // }
+          // if (frame.member?.contains('_rootRun') == true) {
+          //   return false;
+          // }
+          // if (frame.package == 'command_it' &&
+          //     frame.member!.contains('_execute')) {
+          //   return false;
+          // }
+          // return true;
+        )
+        .toList();
     if (strippedFrames.isNotEmpty) {
       final commandFrame = strippedFrames.removeLast();
       strippedFrames.add(
@@ -765,8 +759,7 @@ abstract class Command<TParam, TResult> extends CustomValueNotifier<TResult> {
     }
     trace = Trace(strippedFrames);
 
-    final framesBefore =
-        _traceBeforeExecute?.frames.where(
+    final framesBefore = _traceBeforeExecute?.frames.where(
           (frame) => frame.package != 'command_it',
         ) ??
         [];
@@ -816,10 +809,9 @@ abstract class Command<TParam, TResult> extends CustomValueNotifier<TResult> {
       funcNoParam: action,
       initialValue: null,
       restriction: restriction,
-      ifRestrictedExecuteInstead:
-          ifRestrictedExecuteInstead != null
-              ? (_) => ifRestrictedExecuteInstead()
-              : null,
+      ifRestrictedExecuteInstead: ifRestrictedExecuteInstead != null
+          ? (_) => ifRestrictedExecuteInstead()
+          : null,
       includeLastResultInCommandResults: false,
       noReturnValue: true,
       errorFilter: errorFilter,
@@ -917,10 +909,9 @@ abstract class Command<TParam, TResult> extends CustomValueNotifier<TResult> {
       funcNoParam: func,
       initialValue: initialValue,
       restriction: restriction,
-      ifRestrictedExecuteInstead:
-          ifRestrictedExecuteInstead != null
-              ? (_) => ifRestrictedExecuteInstead()
-              : null,
+      ifRestrictedExecuteInstead: ifRestrictedExecuteInstead != null
+          ? (_) => ifRestrictedExecuteInstead()
+          : null,
       includeLastResultInCommandResults: includeLastResultInCommandResults,
       noReturnValue: false,
       errorFilter: errorFilter,
@@ -1018,10 +1009,9 @@ abstract class Command<TParam, TResult> extends CustomValueNotifier<TResult> {
       funcNoParam: action,
       initialValue: null,
       restriction: restriction,
-      ifRestrictedExecuteInstead:
-          ifRestrictedExecuteInstead != null
-              ? (_) => ifRestrictedExecuteInstead()
-              : null,
+      ifRestrictedExecuteInstead: ifRestrictedExecuteInstead != null
+          ? (_) => ifRestrictedExecuteInstead()
+          : null,
       includeLastResultInCommandResults: false,
       noReturnValue: true,
       errorFilter: errorFilter,
@@ -1113,10 +1103,9 @@ abstract class Command<TParam, TResult> extends CustomValueNotifier<TResult> {
       funcNoParam: func,
       initialValue: initialValue,
       restriction: restriction,
-      ifRestrictedExecuteInstead:
-          ifRestrictedExecuteInstead != null
-              ? (_) => ifRestrictedExecuteInstead()
-              : null,
+      ifRestrictedExecuteInstead: ifRestrictedExecuteInstead != null
+          ? (_) => ifRestrictedExecuteInstead()
+          : null,
       includeLastResultInCommandResults: includeLastResultInCommandResults,
       noReturnValue: false,
       errorFilter: errorFilter,
@@ -1214,10 +1203,9 @@ abstract class Command<TParam, TResult> extends CustomValueNotifier<TResult> {
       undo: undo,
       initialValue: null,
       restriction: restriction,
-      ifRestrictedExecuteInstead:
-          ifRestrictedExecuteInstead != null
-              ? (_) => ifRestrictedExecuteInstead()
-              : null,
+      ifRestrictedExecuteInstead: ifRestrictedExecuteInstead != null
+          ? (_) => ifRestrictedExecuteInstead()
+          : null,
       undoOnExecutionFailure: undoOnExecutionFailure,
       includeLastResultInCommandResults: false,
       noReturnValue: true,
@@ -1323,10 +1311,9 @@ abstract class Command<TParam, TResult> extends CustomValueNotifier<TResult> {
       initialValue: initialValue,
       undoOnExecutionFailure: undoOnExecutionFailure,
       restriction: restriction,
-      ifRestrictedExecuteInstead:
-          ifRestrictedExecuteInstead != null
-              ? (_) => ifRestrictedExecuteInstead()
-              : null,
+      ifRestrictedExecuteInstead: ifRestrictedExecuteInstead != null
+          ? (_) => ifRestrictedExecuteInstead()
+          : null,
       includeLastResultInCommandResults: includeLastResultInCommandResults,
       noReturnValue: false,
       errorFilter: errorFilter,
