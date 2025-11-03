@@ -2,9 +2,11 @@ analyzer:
   language:
     strict-casts: true
     strict-inference: true
-    strict-raw-types: true  
-# analyzer:
-#   exclude:
+    strict-raw-types: true
+  exclude:
+    - example/**
+    - example_command_results/**
+    - counter_example/**
     
 linter:
   rules:
