@@ -1,6 +1,6 @@
 # command_it
-![Build](https://github.com/escamoteur/command_it/workflows/Build/badge.svg)
-[![codecov](https://codecov.io/gh/escamoteur/command_it/branch/master/graph/badge.svg)](https://codecov.io/gh/escamoteur/command_it)
+![Build](https://github.com/flutter-it/command_it/workflows/Dart%20CI/badge.svg)
+[![codecov](https://codecov.io/gh/flutter-it/command_it/branch/main/graph/badge.svg)](https://codecov.io/gh/flutter-it/command_it)
 
 command_it is a way to manage your state based on `ValueListenable` and the `Command` design pattern. Sounds scary uh? Ok lets try it a different way. A `Command` is an object that wraps a function that can be executed by calling the command, therefore decoupling your UI from the wrapped function.
 
