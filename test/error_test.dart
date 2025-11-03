@@ -36,14 +36,29 @@ Future<void> asyncFunctionAssertion() async {
 }
 
 void main() {
+  setUp(() {
+    // Reset global state before each test
+    Command.globalExceptionHandler = null;
+    Command.reportErrorHandlerExceptionsToGlobalHandler = true;
+    // ignore: deprecated_member_use_from_same_package
+    Command.debugErrorsThrowAlways = false;
+  });
+
+  tearDown(() {
+    // Clean up global state after each test
+    Command.globalExceptionHandler = null;
+    // ignore: deprecated_member_use_from_same_package
+    Command.debugErrorsThrowAlways = false;
+  });
+
   group('ErrorFilterTests', () {
     test('PredicateFilterTest', () {
       final filter = PredicatesErrorFilter([
         (error, stacktrace) => errorFilter<Error>(error, ErrorReaction.none),
         (error, stacktrace) => errorFilter<Exception>(
-          error,
-          ErrorReaction.firstLocalThenGlobalHandler,
-        ),
+              error,
+              ErrorReaction.firstLocalThenGlobalHandler,
+            ),
       ]);
 
       expect(filter.filter(Error(), StackTrace.current), ErrorReaction.none);
@@ -234,9 +249,9 @@ void main() {
         () => asyncFunction1(TestType.exception),
         errorFilter: PredicatesErrorFilter([
           (error, stacktrace) => errorFilter<Exception>(
-            error,
-            ErrorReaction.localAndGlobalHandler,
-          ),
+                error,
+                ErrorReaction.localAndGlobalHandler,
+              ),
         ]),
       );
       testCommand.errors.listen(
@@ -260,9 +275,9 @@ void main() {
         () => asyncFunction1(TestType.exception),
         errorFilter: PredicatesErrorFilter([
           (error, stacktrace) => errorFilter<Exception>(
-            error,
-            ErrorReaction.firstLocalThenGlobalHandler,
-          ),
+                error,
+                ErrorReaction.firstLocalThenGlobalHandler,
+              ),
         ]),
       );
       Command.globalExceptionHandler = (error, _) {
@@ -283,9 +298,9 @@ void main() {
         () => asyncFunction1(TestType.exception),
         errorFilter: PredicatesErrorFilter([
           (error, stacktrace) => errorFilter<Exception>(
-            error,
-            ErrorReaction.firstLocalThenGlobalHandler,
-          ),
+                error,
+                ErrorReaction.firstLocalThenGlobalHandler,
+              ),
         ]),
       );
       testCommand.errors.listen(
@@ -309,9 +324,9 @@ void main() {
         () => asyncFunctionBoolExeption(),
         errorFilter: PredicatesErrorFilter([
           (error, stacktrace) => errorFilter<Exception>(
-            error,
-            ErrorReaction.firstLocalThenGlobalHandler,
-          ),
+                error,
+                ErrorReaction.firstLocalThenGlobalHandler,
+              ),
         ]),
         initialValue: true,
       );
@@ -339,9 +354,9 @@ void main() {
         () => asyncFunction1(TestType.exception),
         errorFilter: PredicatesErrorFilter([
           (error, stacktrace) => errorFilter<Exception>(
-            error,
-            ErrorReaction.firstLocalThenGlobalHandler,
-          ),
+                error,
+                ErrorReaction.firstLocalThenGlobalHandler,
+              ),
         ]),
       );
       expectLater(() => testCommand.execute(), throwsA(isA<AssertionError>()));
@@ -359,9 +374,9 @@ void main() {
         () => asyncFunction1(TestType.exception),
         errorFilter: PredicatesErrorFilter([
           (error, stacktrace) => errorFilter<Exception>(
-            error,
-            ErrorReaction.noHandlersThrowException,
-          ),
+                error,
+                ErrorReaction.noHandlersThrowException,
+              ),
         ]),
       );
       expectLater(() => testCommand.execute(), throwsA(isA<Exception>()));
@@ -378,9 +393,9 @@ void main() {
         () => asyncFunction1(TestType.exception),
         errorFilter: PredicatesErrorFilter([
           (error, stacktrace) => errorFilter<Exception>(
-            error,
-            ErrorReaction.noHandlersThrowException,
-          ),
+                error,
+                ErrorReaction.noHandlersThrowException,
+              ),
         ]),
       );
       testCommand.errors.listen(
@@ -400,9 +415,9 @@ void main() {
         () => asyncFunction1(TestType.exception),
         errorFilter: PredicatesErrorFilter([
           (error, stacktrace) => errorFilter<Exception>(
-            error,
-            ErrorReaction.noHandlersThrowException,
-          ),
+                error,
+                ErrorReaction.noHandlersThrowException,
+              ),
         ]),
       );
       Command.globalExceptionHandler = (error, _) {
@@ -422,9 +437,9 @@ void main() {
         () => asyncFunction1(TestType.exception),
         errorFilter: PredicatesErrorFilter([
           (error, stacktrace) => errorFilter<Exception>(
-            error,
-            ErrorReaction.noHandlersThrowException,
-          ),
+                error,
+                ErrorReaction.noHandlersThrowException,
+              ),
         ]),
       );
       testCommand.errors.listen(
@@ -447,9 +462,9 @@ void main() {
         () => asyncFunction1(TestType.exception),
         errorFilter: PredicatesErrorFilter([
           (error, stacktrace) => errorFilter<Exception>(
-            error,
-            ErrorReaction.throwIfNoLocalHandler,
-          ),
+                error,
+                ErrorReaction.throwIfNoLocalHandler,
+              ),
         ]),
       );
       testCommand.errors.listen(
@@ -472,9 +487,9 @@ void main() {
         () => asyncFunction1(TestType.exception),
         errorFilter: PredicatesErrorFilter([
           (error, stacktrace) => errorFilter<Exception>(
-            error,
-            ErrorReaction.throwIfNoLocalHandler,
-          ),
+                error,
+                ErrorReaction.throwIfNoLocalHandler,
+              ),
         ]),
       );
       Command.globalExceptionHandler = (error, _) {

@@ -1,3 +1,10 @@
+[8.0.1]
+### Maintenance
+* Updated listen_it dependency to ^5.3.0
+* Updated GitHub Actions workflow with modern action versions and codecov v5
+* Fixed workflow to trigger on main branch
+* Fixed badges to point to flutter-it organization
+
 [8.0.0] - 19.07.2025
 * although this doesn't add any new functionality because of the rebranding from flutter_command to command_it we use the next major version
 
