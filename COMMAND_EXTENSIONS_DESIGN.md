@@ -23,47 +23,28 @@ This document consolidates the design decisions for extending command_it with:
 
 ---
 
-## Design Decisions Summary
+## Features
 
-### What We Rejected
+### 1. ErrorHandlerRegistry
+**Declarative global error routing with priorities**
+- Route different error types to different handlers
+- Priority-based execution order
+- Type-safe handler registration
 
-❌ **CommandTracker** - Redundant with existing listeners
-- Commands already have `results`, `thrownExceptions`, `isExecuting` ValueListenables
-- Users can attach listeners directly for observation
-- No need for separate tracker concept
+### 2. RetryableCommand
+**Decorator for retry behavior with flexible strategies**
+- Exponential backoff, batch size reduction, API fallback
+- Command-specific retry policies
+- Composable with other decorators
 
-❌ **ErrorMiddleware (complex version)** - Too much for global observation
-- Would require iteration through list
-- Commands would couple to middleware system
-- Behavior modification should use decorators instead
-
-❌ **Global Interceptors with lifecycle hooks** - Redundant with listeners
-- If they only observe → use listeners
-- If they modify behavior → use decorators
-- No middle ground needed
-
-❌ **Command Registry** - No use case identified
-- Event-driven architecture (push, not pull)
-- Commands notify hooks, not pulled from registry
-- Would add overhead for no clear benefit
-
-❌ **Chaining Multiple Hooks** - Complexity without clear benefit
-- Hard to debug transformation pipelines
-- Performance overhead of multiple iterations
-- Unclear semantics (should all hooks agree?)
-- Pattern-based routing (first match wins) is cleaner
-
-### What We Kept
-
-✅ **ErrorHandlerRegistry** - Declarative global error routing with priorities
-✅ **RetryableCommand** - Decorator for retry behavior with flexible strategies
-✅ **Lifecycle Hooks** - Pattern-based routing with 4 hook types:
-   - `onBeforeExecute` - Execution guards (throws to block)
-   - `onBeforeSuccess` - Result validation/transformation (throws to convert to error)
-   - `onBeforeError` - Error recovery/transformation (returns to convert to success)
-   - `onAfterExecute` - Side effects only (analytics, logging)
-   - **First match wins** - Hooks register with `when` predicate, first matching hook runs
-   - **No chaining** - Only one hook executes per command per lifecycle point
+### 3. Lifecycle Hooks
+**Pattern-based routing with 4 hook types:**
+- `onBeforeExecute` - Execution guards (throws to block)
+- `onBeforeSuccess` - Result validation/transformation (throws to convert to error)
+- `onBeforeError` - Error recovery/transformation (returns to convert to success)
+- `onAfterExecute` - Side effects only (analytics, logging)
+- **First match wins** - Hooks register with `when` predicate, first matching hook runs
+- **No chaining** - Only one hook executes per command per lifecycle point
 
 ---
 
@@ -1155,17 +1136,11 @@ RetryableCommand         // only if you wrap
 
 ## Migration Path
 
-**From current code:**
+All features are **additive and opt-in**:
 1. Keep using existing error handling (no changes needed)
 2. Optionally add ErrorHandlerRegistry for type-based routing
 3. Optionally wrap commands with RetryableCommand
-4. Optionally add onBeforeExecute for global guards
-
-**From proposed middleware (now rejected):**
-- Don't implement middleware
-- Use ErrorHandlerRegistry instead for global error routing
-- Use decorators for behavior modification
-- Use listeners for observation
+4. Optionally add lifecycle hooks for global guards/transformations
 
 ---
 
@@ -1186,21 +1161,3 @@ RetryableCommand         // only if you wrap
 6. **Update documentation**
 7. **Create examples** showing all hook types and policies
 
----
-
-## Files to Update/Remove
-
-### Keep & Update:
-- ✅ `RETRYABLE_COMMAND_SPEC.md` - Keep (decorator pattern is good)
-- ✅ `DECLARATIVE_ERROR_HANDLING_SPEC.md` - Update (remove middleware, keep registry)
-
-### Remove:
-- ❌ `COMMAND_TRACKER_SPEC.md` - Remove (redundant with listeners)
-- ❌ `DECLARATIVE_ERROR_HANDLING_PLAN.md` - Remove (old combined doc)
-
-### Cleanup:
-- ❌ `lib/enhanced_command_error.dart` - Delete (accidentally created)
-- ❌ Export in `lib/command_it.dart` - Remove enhanced_command_error export
-
-### New:
-- ✅ This document (`COMMAND_EXTENSIONS_DESIGN.md`) - Consolidated design decisions
