@@ -126,11 +126,14 @@ class ErrorHandlerRegistry {
   }
 
   bool tryHandle(Object error, CommandError context) {
+    bool handled = false;
     for (final handler in _handlers) {
       if (handler.matches(error)) {
         handler.handle(error, context);
+        handled = true;
       }
     }
+    return handled;
   }
 }
 
@@ -140,8 +143,12 @@ class Command {
 
   // Called by command when error should go to global handler
   void _notifyGlobalError(CommandError error) {
-    errorRegistry.tryHandle(error.error, error);
-    globalExceptionHandler?.call(error, error.stackTrace);
+    final handledByRegistry = errorRegistry.tryHandle(error.error, error);
+
+    // Legacy handler only called if registry didn't handle it
+    if (!handledByRegistry && globalExceptionHandler != null) {
+      globalExceptionHandler!(error, error.stackTrace);
+    }
   }
 }
 ```
@@ -173,8 +180,9 @@ void setupErrorHandling() {
 ### Key Points
 - All matching handlers execute (not exclusive)
 - Handlers run in priority order (high to low)
-- Backward compatible with existing `globalExceptionHandler`
-- No middleware - just registry lookup
+- Returns `true` if any handler matched the error
+- `globalExceptionHandler` only called if registry returns `false` (no matches)
+- Backward compatible: if no handlers registered, falls back to `globalExceptionHandler`
 
 ---
 
