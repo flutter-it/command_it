@@ -8,36 +8,73 @@
 
 ## Overview
 
-This document consolidates the design decisions for extending command_it with:
+This document consolidates the design decisions for extending command_it:
+
+### v8.1.0 (Decided - Ready for Implementation)
+- **Hybrid Error Filtering API** - Add `errorFilterFn` parameter for compile-time type safety
+
+### v9.0.0 (Design Phase)
 1. **Global Error Handling** (ErrorHandlerRegistry with priority-based routing)
 2. **Retry Capability** (RetryableCommand decorator with flexible strategies)
-3. **Lifecycle Hooks** (4 hook types with HookPolicy system)
+3. **Lifecycle Hooks** (4 hook types with pattern-based routing)
 
-**Core Principles Established:**
+**Core Principles:**
 - ✅ **Observation** → Use existing listeners (no new system needed)
 - ✅ **Behavior modification** → Use decorators (wrapping pattern) or lifecycle hooks
 - ✅ **Global error routing** → Use ErrorHandlerRegistry with priorities
-- ✅ **Lifecycle hooks** → 4 types (guard, validate, recover, observe) with policy control
-- ✅ **Zero overhead** → Features are opt-in, enum switch + empty list checks only
-- ✅ **Flexibility** → HookPolicy enables testing, production, and strict enforcement modes
+- ✅ **Lifecycle hooks** → Pattern-based routing with first-match-wins
+- ✅ **Zero overhead** → Features are opt-in, minimal runtime cost
+- ✅ **Type safety** → Compile-time checking wherever possible
 
 ---
 
 ## Features
 
-### 1. ErrorHandlerRegistry
+### ✅ Decided: Hybrid Error Filtering API (v8.1.0)
+**Status**: Specification complete, ready for implementation
+
+Two-parameter approach for compile-time type safety:
+- `errorFilter` - Accepts ErrorFilter objects (existing API)
+- `errorFilterFn` - Accepts functions with explicit signature
+- Mutually exclusive (assertion enforces single choice)
+
+```dart
+typedef ErrorFilterFn = ErrorReaction? Function(
+  Object error,
+  StackTrace stackTrace,
+);
+
+Command.createAsync(
+  fetchData,
+  [],
+  errorFilterFn: (e, s) => e is NetworkException ? ErrorReaction.global : null,
+  // Compile-time checked signature! ✅
+);
+```
+
+**Benefits:**
+- ✅ Full compile-time type checking for functions
+- ✅ Backward compatible (existing `errorFilter` unchanged)
+- ✅ Minimal API bloat (just one parameter added)
+- ✅ Clear separation: objects vs functions
+
+**See**: TYPE_SAFE_HYBRID_API.md and IMPLEMENTATION_PLAN.md for complete specification
+
+---
+
+### 1. ErrorHandlerRegistry (v9.0.0)
 **Declarative global error routing with priorities**
 - Route different error types to different handlers
 - Priority-based execution order
 - Type-safe handler registration
 
-### 2. RetryableCommand
+### 2. RetryableCommand (v9.0.0)
 **Decorator for retry behavior with flexible strategies**
 - Exponential backoff, batch size reduction, API fallback
 - Command-specific retry policies
 - Composable with other decorators
 
-### 3. Lifecycle Hooks
+### 3. Lifecycle Hooks (v9.0.0)
 **Pattern-based routing with 4 hook types:**
 - `onBeforeExecute` - Execution guards (throws to block)
 - `onBeforeSuccess` - Result validation/transformation (throws to convert to error)
@@ -1137,6 +1174,13 @@ RetryableCommand         // only if you wrap
 ## Migration Path
 
 All features are **additive and opt-in**:
+
+### v8.1.0
+1. Keep using existing `errorFilter` parameter (no changes needed)
+2. Optionally migrate to `errorFilterFn` for compile-time type checking
+3. Both parameters available (mutually exclusive)
+
+### v9.0.0
 1. Keep using existing error handling (no changes needed)
 2. Optionally add ErrorHandlerRegistry for type-based routing
 3. Optionally wrap commands with RetryableCommand
@@ -1146,18 +1190,28 @@ All features are **additive and opt-in**:
 
 ## Next Steps
 
+### v8.1.0 - Hybrid Error Filtering (Ready to Implement)
+**Status**: Specification complete (see TYPE_SAFE_HYBRID_API.md and IMPLEMENTATION_PLAN.md)
+
+1. Add `errorFilterFn` parameter to all 12 factory methods
+2. Add `_resolveErrorFilter()` helper method
+3. Update tests to verify compile-time type checking
+4. Update documentation with examples
+5. **Estimated effort**: 6.5 hours
+
+### v9.0.0 - New Features (Design Phase)
+
 1. **Finalize remaining open questions** (async retry, observable state)
 2. **Review complete API design**
-3. **Create implementation plan** for each feature
-4. **Implement in phases**:
+3. **Implement in phases**:
    - Phase 1: ErrorHandlerRegistry
    - Phase 2: Lifecycle hooks (all 4 types) with HookPolicy system
    - Phase 3: RetryableCommand decorator
-5. **Add tests** for each feature:
+4. **Add tests** for each feature:
    - Hook transformation behaviors (passthrough, transform, throw)
    - Hook policy permutations (call, neverCall, defaultCall, defaultNeverCall)
    - Per-command overrides
    - Error recovery paths
-6. **Update documentation**
-7. **Create examples** showing all hook types and policies
+5. **Update documentation**
+6. **Create examples** showing all hook types and policies
 
