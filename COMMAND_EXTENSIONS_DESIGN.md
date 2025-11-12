@@ -58,7 +58,7 @@ Command.createAsync(
 - ✅ Minimal API bloat (just one parameter added)
 - ✅ Clear separation: objects vs functions
 
-**See**: TYPE_SAFE_HYBRID_API.md and IMPLEMENTATION_PLAN.md for complete specification
+**See**: IMPLEMENTATION_PLAN.md for complete implementation specification
 
 ---
 
@@ -1191,7 +1191,7 @@ All features are **additive and opt-in**:
 ## Next Steps
 
 ### v8.1.0 - Hybrid Error Filtering (Ready to Implement)
-**Status**: Specification complete (see TYPE_SAFE_HYBRID_API.md and IMPLEMENTATION_PLAN.md)
+**Status**: Specification complete (see IMPLEMENTATION_PLAN.md)
 
 1. Add `errorFilterFn` parameter to all 12 factory methods
 2. Add `_resolveErrorFilter()` helper method
