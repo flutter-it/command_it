@@ -57,7 +57,7 @@ class CommandBuilder<TParam, TResult> extends StatelessWidget {
               ? (lastData, paramData) =>
                   whileExecuting!.call(context, lastData, paramData)
               : null,
-          onError: (lastData, error, paramData) {
+          onError: (error, lastData, paramData) {
             if (onError == null) {
               return const SizedBox();
             }
@@ -66,7 +66,7 @@ class CommandBuilder<TParam, TResult> extends StatelessWidget {
               'This CommandBuilder received an error from Command ${command.name} '
               'but the errorReaction indidates that the error should not be handled locally. ',
             );
-            return onError!.call(context, lastData, error, paramData);
+            return onError!.call(context, error, lastData, paramData);
           },
         );
       },

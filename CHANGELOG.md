@@ -1,3 +1,20 @@
+[8.1.0]
+### New Feature
+* Added `errorFilterFn` parameter for function-based error filtering - provides simple inline alternative to object-based `ErrorFilter` system
+* Return `ErrorReaction` directly or `ErrorReaction.defaulErrorFilter` to delegate to default
+* Assertion prevents using both `errorFilter` and `errorFilterFn` simultaneously
+* Available on all 12 command factory methods and MockCommand
+
+### Bug Fixes
+* Fixed unsafe ValueNotifier type casts in `_canExecute` field - changed to ValueListenable<bool> with safe disposal
+* Fixed parameter order in CommandBuilder.onError callback - now (error, lastData, paramData) for consistency
+* Fixed MockCommand type signature from `Command<TParam, TResult?>` to `Command<TParam, TResult>` to match real Commands
+
+### Documentation
+* Added comprehensive documentation to execute() method
+* Improved error handling documentation in README with configuration examples
+* Fixed image URLs to use flutter-it organization
+
 [8.0.2]
 ### Maintenance
 * Fixed analyzer issues in example_command_results (broken package imports, missing http version)

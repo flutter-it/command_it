@@ -2,7 +2,7 @@ part of './command_it.dart';
 
 /// `MockCommand` allows you to easily mock an Command for your Unit and UI tests
 /// Mocking a command with `mockito` https://pub.dartlang.org/packages/mockito has its limitations.
-class MockCommand<TParam, TResult> extends Command<TParam, TResult?> {
+class MockCommand<TParam, TResult> extends Command<TParam, TResult> {
   List<CommandResult<TParam, TResult>>? returnValuesForNextExecute;
 
   /// the last value that was passed when execute or the command directly was called
@@ -21,12 +21,13 @@ class MockCommand<TParam, TResult> extends Command<TParam, TResult?> {
     super.ifRestrictedExecuteInstead,
     super.includeLastResultInCommandResults = false,
     super.errorFilter,
+    super.errorFilterFn,
     super.notifyOnlyWhenValueChanges = false,
     super.name,
   }) {
     _commandResult
         .where((result) => result.hasData)
-        .listen((result, _) => value = result.data);
+        .listen((result, _) => value = result.data!);
   }
 
   /// to be able to simulate any output of the command when it is called you can here queue the output data for the next execution call

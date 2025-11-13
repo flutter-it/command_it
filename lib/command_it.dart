@@ -149,6 +149,26 @@ class CommandError<TParam> {
 
 typedef ExecuteInsteadHandler<TParam> = void Function(TParam?);
 
+/// Function-based error filter for simple inline error handling logic.
+///
+/// Returns the [ErrorReaction] to use for the given error, or [ErrorReaction.defaulErrorFilter]
+/// to use the default error handling behavior.
+///
+/// Example:
+/// ```dart
+/// errorFilterFn: (error, stackTrace) {
+///   if (error is NetworkException) return ErrorReaction.globalHandler;
+///   if (error is TimeoutException) return ErrorReaction.localHandler;
+///   return ErrorReaction.defaulErrorFilter; // Use default for other errors
+/// }
+/// ```
+///
+/// For complex or reusable error handling logic, use [ErrorFilter] objects instead.
+typedef ErrorFilterFn = ErrorReaction Function(
+  Object error,
+  StackTrace stackTrace,
+);
+
 /// [Command] capsules a given handler function that can then be executed by its [execute] method.
 /// The result of this method is then published through its `ValueListenable` interface
 /// Additionally it offers other `ValueListenables` for it's current execution state,
@@ -175,14 +195,20 @@ abstract class Command<TParam, TResult> extends CustomValueNotifier<TResult> {
     required bool noReturnValue,
     required bool notifyOnlyWhenValueChanges,
     ErrorFilter? errorFilter,
+    ErrorFilterFn? errorFilterFn,
     required String? name,
     required bool noParamValue,
-  })  : _restriction = restriction,
+  })  : assert(
+          !(errorFilter != null && errorFilterFn != null),
+          'Cannot provide both errorFilter and errorFilterFn. Use one or the other.',
+        ),
+        _restriction = restriction,
         _ifRestrictedExecuteInstead = ifRestrictedExecuteInstead,
         _noReturnValue = noReturnValue,
         _noParamValue = noParamValue,
         _includeLastResultInCommandResults = includeLastResultInCommandResults,
         _errorFilter = errorFilter ?? errorFilterDefault,
+        _errorFilterFn = errorFilterFn,
         _name = name,
         super(
           initialValue,
@@ -567,6 +593,8 @@ abstract class Command<TParam, TResult> extends CustomValueNotifier<TResult> {
 
   final ErrorFilter _errorFilter;
 
+  final ErrorFilterFn? _errorFilterFn;
+
   /// optional Name that is included in log messages.
   final String? _name;
 
@@ -623,7 +651,15 @@ abstract class Command<TParam, TResult> extends CustomValueNotifier<TResult> {
     Object error,
     StackTrace stackTrace,
   ) {
-    var errorReaction = _errorFilter.filter(error, stackTrace);
+    // Check which filter is provided (assertion in constructor ensures only one)
+    ErrorReaction errorReaction;
+    if (_errorFilterFn != null) {
+      errorReaction = _errorFilterFn(error, stackTrace);
+    } else {
+      errorReaction = _errorFilter.filter(error, stackTrace);
+    }
+
+    // If defaulErrorFilter is returned, use the default filter
     if (errorReaction == ErrorReaction.defaulErrorFilter) {
       errorReaction = errorFilterDefault.filter(error, stackTrace);
     }
@@ -815,6 +851,7 @@ abstract class Command<TParam, TResult> extends CustomValueNotifier<TResult> {
     ValueListenable<bool>? restriction,
     void Function()? ifRestrictedExecuteInstead,
     ErrorFilter? errorFilter,
+    ErrorFilterFn? errorFilterFn,
     bool notifyOnlyWhenValueChanges = false,
     String? debugName,
   }) {
@@ -828,6 +865,7 @@ abstract class Command<TParam, TResult> extends CustomValueNotifier<TResult> {
       includeLastResultInCommandResults: false,
       noReturnValue: true,
       errorFilter: errorFilter,
+      errorFilterFn: errorFilterFn,
       notifyOnlyWhenValueChanges: notifyOnlyWhenValueChanges,
       name: debugName,
       noParamValue: true,
@@ -864,6 +902,7 @@ abstract class Command<TParam, TResult> extends CustomValueNotifier<TResult> {
     ValueListenable<bool>? restriction,
     ExecuteInsteadHandler<TParam>? ifRestrictedExecuteInstead,
     ErrorFilter? errorFilter,
+    ErrorFilterFn? errorFilterFn,
     bool notifyOnlyWhenValueChanges = false,
     String? debugName,
   }) {
@@ -875,6 +914,7 @@ abstract class Command<TParam, TResult> extends CustomValueNotifier<TResult> {
       includeLastResultInCommandResults: false,
       noReturnValue: true,
       errorFilter: errorFilter,
+      errorFilterFn: errorFilterFn,
       notifyOnlyWhenValueChanges: notifyOnlyWhenValueChanges,
       name: debugName,
       noParamValue: false,
@@ -915,6 +955,7 @@ abstract class Command<TParam, TResult> extends CustomValueNotifier<TResult> {
     void Function()? ifRestrictedExecuteInstead,
     bool includeLastResultInCommandResults = false,
     ErrorFilter? errorFilter,
+    ErrorFilterFn? errorFilterFn,
     bool notifyOnlyWhenValueChanges = false,
     String? debugName,
   }) {
@@ -928,6 +969,7 @@ abstract class Command<TParam, TResult> extends CustomValueNotifier<TResult> {
       includeLastResultInCommandResults: includeLastResultInCommandResults,
       noReturnValue: false,
       errorFilter: errorFilter,
+      errorFilterFn: errorFilterFn,
       notifyOnlyWhenValueChanges: notifyOnlyWhenValueChanges,
       name: debugName,
       noParamValue: true,
@@ -969,6 +1011,7 @@ abstract class Command<TParam, TResult> extends CustomValueNotifier<TResult> {
     ExecuteInsteadHandler<TParam>? ifRestrictedExecuteInstead,
     bool includeLastResultInCommandResults = false,
     ErrorFilter? errorFilter,
+    ErrorFilterFn? errorFilterFn,
     bool notifyOnlyWhenValueChanges = false,
     String? debugName,
   }) {
@@ -980,6 +1023,7 @@ abstract class Command<TParam, TResult> extends CustomValueNotifier<TResult> {
       includeLastResultInCommandResults: includeLastResultInCommandResults,
       noReturnValue: false,
       errorFilter: errorFilter,
+      errorFilterFn: errorFilterFn,
       notifyOnlyWhenValueChanges: notifyOnlyWhenValueChanges,
       name: debugName,
       noParamValue: false,
@@ -1015,6 +1059,7 @@ abstract class Command<TParam, TResult> extends CustomValueNotifier<TResult> {
     ValueListenable<bool>? restriction,
     void Function()? ifRestrictedExecuteInstead,
     ErrorFilter? errorFilter,
+    ErrorFilterFn? errorFilterFn,
     bool notifyOnlyWhenValueChanges = false,
     String? debugName,
   }) {
@@ -1028,6 +1073,7 @@ abstract class Command<TParam, TResult> extends CustomValueNotifier<TResult> {
       includeLastResultInCommandResults: false,
       noReturnValue: true,
       errorFilter: errorFilter,
+      errorFilterFn: errorFilterFn,
       notifyOnlyWhenValueChanges: notifyOnlyWhenValueChanges,
       name: debugName,
       noParamValue: true,
@@ -1061,6 +1107,7 @@ abstract class Command<TParam, TResult> extends CustomValueNotifier<TResult> {
     ValueListenable<bool>? restriction,
     ExecuteInsteadHandler<TParam>? ifRestrictedExecuteInstead,
     ErrorFilter? errorFilter,
+    ErrorFilterFn? errorFilterFn,
     bool notifyOnlyWhenValueChanges = false,
     String? debugName,
   }) {
@@ -1072,6 +1119,7 @@ abstract class Command<TParam, TResult> extends CustomValueNotifier<TResult> {
       includeLastResultInCommandResults: false,
       noReturnValue: true,
       errorFilter: errorFilter,
+      errorFilterFn: errorFilterFn,
       notifyOnlyWhenValueChanges: notifyOnlyWhenValueChanges,
       name: debugName,
       noParamValue: false,
@@ -1109,6 +1157,7 @@ abstract class Command<TParam, TResult> extends CustomValueNotifier<TResult> {
     void Function()? ifRestrictedExecuteInstead,
     bool includeLastResultInCommandResults = false,
     ErrorFilter? errorFilter,
+    ErrorFilterFn? errorFilterFn,
     bool notifyOnlyWhenValueChanges = false,
     String? debugName,
   }) {
@@ -1122,6 +1171,7 @@ abstract class Command<TParam, TResult> extends CustomValueNotifier<TResult> {
       includeLastResultInCommandResults: includeLastResultInCommandResults,
       noReturnValue: false,
       errorFilter: errorFilter,
+      errorFilterFn: errorFilterFn,
       notifyOnlyWhenValueChanges: notifyOnlyWhenValueChanges,
       name: debugName,
       noParamValue: true,
@@ -1159,6 +1209,7 @@ abstract class Command<TParam, TResult> extends CustomValueNotifier<TResult> {
     ExecuteInsteadHandler<TParam>? ifRestrictedExecuteInstead,
     bool includeLastResultInCommandResults = false,
     ErrorFilter? errorFilter,
+    ErrorFilterFn? errorFilterFn,
     bool notifyOnlyWhenValueChanges = false,
     String? debugName,
   }) {
@@ -1170,6 +1221,7 @@ abstract class Command<TParam, TResult> extends CustomValueNotifier<TResult> {
       includeLastResultInCommandResults: includeLastResultInCommandResults,
       noReturnValue: false,
       errorFilter: errorFilter,
+      errorFilterFn: errorFilterFn,
       notifyOnlyWhenValueChanges: notifyOnlyWhenValueChanges,
       name: debugName,
       noParamValue: false,
@@ -1208,6 +1260,7 @@ abstract class Command<TParam, TResult> extends CustomValueNotifier<TResult> {
     ValueListenable<bool>? restriction,
     void Function()? ifRestrictedExecuteInstead,
     ErrorFilter? errorFilter = const ErrorHandlerLocal(),
+    ErrorFilterFn? errorFilterFn,
     bool notifyOnlyWhenValueChanges = false,
     String? debugName,
   }) {
@@ -1223,6 +1276,7 @@ abstract class Command<TParam, TResult> extends CustomValueNotifier<TResult> {
       includeLastResultInCommandResults: false,
       noReturnValue: true,
       errorFilter: errorFilter,
+      errorFilterFn: errorFilterFn,
       notifyOnlyWhenValueChanges: notifyOnlyWhenValueChanges,
       name: debugName,
       noParamValue: true,
@@ -1261,6 +1315,7 @@ abstract class Command<TParam, TResult> extends CustomValueNotifier<TResult> {
     ValueListenable<bool>? restriction,
     ExecuteInsteadHandler<TParam>? ifRestrictedExecuteInstead,
     ErrorFilter? errorFilter,
+    ErrorFilterFn? errorFilterFn,
     bool notifyOnlyWhenValueChanges = false,
     String? debugName,
   }) {
@@ -1274,6 +1329,7 @@ abstract class Command<TParam, TResult> extends CustomValueNotifier<TResult> {
       includeLastResultInCommandResults: false,
       noReturnValue: true,
       errorFilter: errorFilter,
+      errorFilterFn: errorFilterFn,
       notifyOnlyWhenValueChanges: notifyOnlyWhenValueChanges,
       name: debugName,
       noParamValue: false,
@@ -1315,6 +1371,7 @@ abstract class Command<TParam, TResult> extends CustomValueNotifier<TResult> {
     void Function()? ifRestrictedExecuteInstead,
     bool includeLastResultInCommandResults = false,
     ErrorFilter? errorFilter,
+    ErrorFilterFn? errorFilterFn,
     bool notifyOnlyWhenValueChanges = false,
     String? debugName,
   }) {
@@ -1330,6 +1387,7 @@ abstract class Command<TParam, TResult> extends CustomValueNotifier<TResult> {
       includeLastResultInCommandResults: includeLastResultInCommandResults,
       noReturnValue: false,
       errorFilter: errorFilter,
+      errorFilterFn: errorFilterFn,
       notifyOnlyWhenValueChanges: notifyOnlyWhenValueChanges,
       name: debugName,
       noParamValue: true,
@@ -1371,6 +1429,7 @@ abstract class Command<TParam, TResult> extends CustomValueNotifier<TResult> {
     ExecuteInsteadHandler<TParam>? ifRestrictedExecuteInstead,
     bool includeLastResultInCommandResults = false,
     ErrorFilter? errorFilter,
+    ErrorFilterFn? errorFilterFn,
     bool notifyOnlyWhenValueChanges = false,
     String? debugName,
   }) {
@@ -1383,6 +1442,7 @@ abstract class Command<TParam, TResult> extends CustomValueNotifier<TResult> {
       includeLastResultInCommandResults: includeLastResultInCommandResults,
       noReturnValue: false,
       errorFilter: errorFilter,
+      errorFilterFn: errorFilterFn,
       notifyOnlyWhenValueChanges: notifyOnlyWhenValueChanges,
       name: debugName,
       noParamValue: false,

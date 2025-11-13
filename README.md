@@ -104,7 +104,7 @@ So far the command did not do more than what you could do with BLoC, besides tha
 
 Let's explore this features by examining the included `example` app which queries an open weather service and displays a list of cities with the current weather. 
 
-![](https://github.com/escamoteur/command_it/blob/master/misc/screen_shot_example.png)
+![](https://github.com/flutter-it/command_it/blob/master/misc/screen_shot_example.png)
 
 The app uses a `WeatherManager` which contains the `Command` to update the `ListView` by making a REST call:
 
@@ -328,6 +328,29 @@ When a command throws an error, you control where it goes using `errorFilter`:
 
 The `errorFilter` determines which handler receives the error (see `ErrorReaction` enum for all options like `localHandler`, `globalHandler`, `firstLocalThenGlobalHandler`, etc.).
 
+**Function-Based Error Filtering:**
+
+For simple inline error handling logic, use `errorFilterFn` instead of `errorFilter`:
+
+```dart
+final command = Command.createAsync<String, List<Data>>(
+  fetchData,
+  [],
+  errorFilterFn: (error, stackTrace) {
+    if (error is NetworkException) return ErrorReaction.globalHandler;
+    if (error is TimeoutException) return ErrorReaction.localHandler;
+    if (error is ValidationError) return ErrorReaction.none;
+    return ErrorReaction.defaulErrorFilter; // Use default for other errors
+  },
+);
+```
+
+**Key Points:**
+- **Simple cases**: Use `errorFilterFn` for inline logic
+- **Complex cases**: Use `ErrorFilter` objects for reusable/composable filters
+- **Cannot use both**: Assertion enforced - choose one or the other
+- **Return `defaulErrorFilter`**: Delegates to `Command.errorFilterDefault`
+
 **Special Cases:**
 
 - `assertionsAlwaysThrow = true`: AssertionErrors bypass error filters and always throw (recommended during development to catch bugs early)
@@ -427,7 +450,7 @@ In case your Command does not return a value you can use the `onSuccess` builder
 
 
 ### toWidget() extension method on Command Result
-I you are using a package `get_it_mixin`, `provider` or `flutter_hooks` you probably don't want to use the `CommandBuilder` for you there is an extension method for the `CommandResult` type that you can use like this:
+If you are using a package `get_it_mixin`, `provider` or `flutter_hooks` you probably don't want to use the `CommandBuilder` for you there is an extension method for the `CommandResult` type that you can use like this:
 
 ```Dart
 return result.toWidget(

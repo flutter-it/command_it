@@ -13,6 +13,7 @@ class CommandAsync<TParam, TResult> extends Command<TParam, TResult> {
     required super.includeLastResultInCommandResults,
     required super.noReturnValue,
     required super.errorFilter,
+    required super.errorFilterFn,
     required super.notifyOnlyWhenValueChanges,
     required super.name,
     required super.noParamValue,
