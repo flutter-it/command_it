@@ -300,7 +300,37 @@ If you assign a handler function to it, it will be called for all Exceptions thr
 The overall work flow of exception handling in command_it is depicted in the following diagram.
 
 <!-- just to keep the image scale correctly in small screens -->
-![](https://github.com/escamoteur/command_it/blob/master/misc/exception_handling.png)
+![](https://github.com/flutter-it/command_it/blob/master/misc/exception_handling.png)
+
+#### Error Handling Configuration
+
+**Global Settings:**
+
+```dart
+// Force AssertionErrors to always throw (useful during development)
+Command.assertionsAlwaysThrow = true;  // default: false
+
+// Send all exceptions to globalExceptionHandler regardless of error filter
+Command.reportAllExceptions = false;  // default: false
+
+// Capture detailed stack traces (performance impact)
+Command.detailedStackTraces = true;  // default: false
+```
+
+**Error Routing:**
+
+When a command throws an error, you control where it goes using `errorFilter`:
+
+- **Local handlers**: Listen to `.errors` ValueListenable (per-command)
+- **Global handler**: Static `Command.globalExceptionHandler` (app-wide)
+
+The `errorFilter` determines which handler receives the error (see `ErrorReaction` enum for all options like `localHandler`, `globalHandler`, `firstLocalThenGlobalHandler`, etc.).
+
+**Special Cases:**
+
+- `assertionsAlwaysThrow = true`: AssertionErrors bypass error filters and always throw (recommended during development to catch bugs early)
+- `reportAllExceptions = true`: All errors go to global handler in addition to normal routing (useful for logging/analytics)
+- Errors always update `.results.value.hasError` regardless of routing
 
 
 ## Getting all data at once

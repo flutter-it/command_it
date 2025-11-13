@@ -1,22 +1,200 @@
-# Implementation Plan: Hybrid Error Filter API
+# Implementation Plan: v8.x Series
 
-**Version**: v8.1.0 (non-breaking addition)
-**Estimated Time**: 4-6 hours
-**Complexity**: Medium
+**Versions Covered**: v8.0.3 (patch), v8.1.0 (minor), v9.0.0 (major)
+**Total Estimated Time**: 17.5-19.5 hours
+**Status**: v8.0.3 complete, v8.1.0 pending
 
 ---
 
 ## Overview
 
-Add support for function-based error filters alongside existing object-based filters by:
-1. Adding `ErrorFilterFn` typedef
-2. Adding `errorFilterFn` parameter to all factory methods
-3. Converting both inputs to internal function representation
-4. Maintaining backward compatibility
+This plan covers two releases incorporating both new features and critical fixes from the November 2025 code review:
+
+### v8.0.3 - Critical Fixes (1.5 hours)
+- Fix unsafe type casts
+- Improve documentation of core methods
+- Improve error handling documentation
+
+### v8.1.0 - Feature Release (16-20 hours)
+1. **Hybrid Error Filtering** - Function-based error filters with type safety
+2. **Test Coverage** - Comprehensive tests for UndoableCommand, CommandBuilder, disposal
+3. **Performance** - Optimize error handling and stack trace capture
+4. **API Enhancements** - ErrorFilter composition utilities and common filters
+
+### v9.0.0 - Breaking Changes (Future)
+See `COMMAND_EXTENSIONS_DESIGN.md` and `API_PROPOSAL_v8.1_v9.0.md` for lifecycle hooks, ErrorHandlerRegistry, and RetryableCommand.
 
 ---
 
-## Phase 1: Define Function Type and Update Command Base Class
+## v8.0.3: Critical Fixes (Code Review P0 Items)
+
+**Estimated Time**: 1.5 hours
+**Complexity**: Low
+**Breaking Changes**: None
+
+### Fix 1: Unsafe ValueNotifier Casts
+
+**File**: `lib/command_it.dart`
+**Lines**: 232, 236
+**Time**: 5 minutes
+**Severity**: HIGH - Runtime crash risk
+
+**Current Code**:
+```dart
+_canExecute = (_restriction == null)
+    ? _isExecuting.map((val) => !val) as ValueNotifier<bool>
+    : _restriction.combineLatest<bool, bool>(
+        _isExecuting,
+        (restriction, isExecuting) => !restriction && !isExecuting,
+      ) as ValueNotifier<bool>;
+```
+
+**Fix**: Change internal field type
+```dart
+// Line 555 - Change field type
+late ValueListenable<bool> _canExecute;  // Was: ValueNotifier<bool>
+
+// Lines 232, 236 - Remove casts
+_canExecute = (_restriction == null)
+    ? _isExecuting.map((val) => !val)
+    : _restriction.combineLatest<bool, bool>(
+        _isExecuting,
+        (restriction, isExecuting) => !restriction && !isExecuting,
+      );
+```
+
+**Impact**: None - getters already return ValueListenable<bool>
+
+**Status**: ✅ COMPLETED
+
+**Note on Future Completion Safety**: This fix was initially planned but rejected after analysis. The success and error paths are mutually exclusive (try/catch), and there's no code path that could complete the same future twice. Adding `isCompleted` checks would mask bugs (double disposal, reentrancy issues) that should fail loudly during development. The dispose path (line 538) legitimately has the check because it's cleanup code.
+
+**Note on Print Statements**: MockCommand print statements were also considered for removal but rejected. They serve legitimate debugging purposes (execution confirmation + misconfiguration warnings) and are already marked as intentional with `// ignore: avoid_print`. Not worth the breaking change to MockCommand API.
+
+---
+
+### Fix 2: Add Documentation to execute() Method
+
+**File**: `lib/command_it.dart`
+**Line**: 245
+**Time**: 30 minutes
+**Severity**: MEDIUM - Critical method lacks docs
+**Status**: ✅ COMPLETED
+
+**Add comprehensive doc comment**:
+```dart
+/// Executes the wrapped command function with optional [param].
+///
+/// The execution follows this flow:
+/// 1. Checks if command is disposed
+/// 2. Validates restriction (if any)
+/// 3. Ensures not already executing (async commands only)
+/// 4. Executes wrapped function
+/// 5. Updates all ValueListenables with results
+/// 6. Handles any errors via ErrorFilter system
+///
+/// For async commands, this method:
+/// - Sets [isExecuting] to true before execution
+/// - Updates [results] with loading state
+/// - Sets [isExecuting] to false after completion
+///
+/// For sync commands:
+/// - Executes immediately
+/// - No [isExecuting] updates (throws assertion if accessed)
+///
+/// Errors are handled according to [errorFilter] configuration.
+/// See [ErrorReaction] for available error handling strategies.
+///
+/// Use [executeWithFuture] if you need to await the result.
+void execute([TParam? param]) async {
+  // ...
+}
+```
+
+**Also document**: `_handleErrorFiltered`, `_mandatoryErrorHandling`, `_improveStacktrace`
+
+---
+
+### Fix 3: Document Error Handling Flow
+
+**File**: `README.md`
+**Time**: 1 hour
+**Severity**: MEDIUM - Complex flow undocumented
+**Status**: ✅ COMPLETED
+
+**Add section after line ~264** (after Error Handling section):
+
+```markdown
+### Error Handling Flow
+
+When a command throws an error, it flows through multiple stages:
+
+```
+Error Occurs in Command
+  ↓
+1. Mandatory Error Handling
+   ├─ AssertionError? → Throw (if assertionsAlwaysThrow)
+   ├─ reportAllExceptions? → Call globalExceptionHandler
+   └─ Continue to filtering
+  ↓
+2. Error Filter Evaluation
+   ├─ Call command's errorFilter
+   ├─ If returns defaulErrorFilter → Use errorFilterDefault
+   └─ Get ErrorReaction
+  ↓
+3. React Based on ErrorReaction
+   ├─ none → Swallow error
+   ├─ throwException → Rethrow
+   ├─ localHandler → Notify .errors listeners
+   ├─ globalHandler → Call globalExceptionHandler
+   ├─ localAndGlobalHandler → Both
+   ├─ firstLocalThenGlobalHandler → Local, fallback to global
+   └─ ... (see ErrorReaction enum)
+  ↓
+4. Update State
+   ├─ Push to .results (if configured)
+   └─ Emit to .errors (if local handling)
+```
+
+**Key points:**
+- Errors always update `.results.value.hasError`
+- Local handlers subscribe to `.errors` ValueListenable
+- Global handler is the static `Command.globalExceptionHandler`
+- `ErrorFilter` controls routing, not handling
+```
+
+---
+
+### v8.0.3 Summary
+
+**Files Modified**: 2
+- `lib/command_it.dart` (2 changes: unsafe casts, execute() documentation)
+- `README.md` (2 changes: error handling config section, image URL fix)
+
+**Breaking Changes**: None
+
+**Testing**:
+- All existing tests must pass
+- No new tests required (fixes only)
+
+---
+
+## v8.1.0: Feature Release
+
+**Estimated Time**: 16-20 hours
+**Complexity**: Medium
+**Breaking Changes**: None
+
+This release contains three major areas:
+1. **Hybrid Error Filtering** (6.5 hours) - Function-based error filters
+2. **Test Coverage Improvements** (6-7 hours) - Fill gaps from code review
+3. **Performance & API Enhancements** (3-4 hours) - Optimizations and utilities
+
+---
+
+## Part A: Hybrid Error Filtering (6.5 hours)
+
+### Phase 1: Define Function Type and Update Command Base Class
 
 **Files**: `lib/command_it.dart`
 **Time**: 30 minutes
@@ -1206,7 +1384,7 @@ If issues are discovered after deployment:
 
 ---
 
-## Time Estimates Summary
+### Hybrid Error Filtering Time Summary
 
 | Phase | Time | Complexity |
 |-------|------|------------|
@@ -1224,6 +1402,490 @@ If issues are discovered after deployment:
 
 ---
 
+## Part B: Test Coverage Improvements (6-7 hours)
+
+**Goal**: Address critical test gaps identified in code review
+
+### Test Suite 1: UndoableCommand Comprehensive Tests
+
+**File**: `test/undoable_command_test.dart` (new file)
+**Time**: 3-4 hours
+**Coverage Target**: 90%+
+
+**Tests to Add**:
+
+1. **Undo operation error handling**
+   ```dart
+   test('Undo operation that throws exception', () async {
+     // Verify error from undo operation is handled properly
+     // Should it call error filter? Should it rollback?
+   });
+   ```
+
+2. **Multiple undo operations**
+   ```dart
+   test('Multiple consecutive undo operations', () async {
+     // Execute → undo → execute → undo → execute
+     // Verify undo stack state at each step
+   });
+
+   test('Undo all operations until stack empty', () async {
+     // Perform 5 executions, then 5 undos
+     // Verify final state matches initial state
+   });
+   ```
+
+3. **Undo stack limits**
+   ```dart
+   test('Undo stack overflow behavior', () async {
+     // Execute 1000+ operations
+     // Verify memory doesn't explode
+     // Check oldest entries are removed
+   });
+
+   test('Undo stack with max size parameter', () async {
+     // If we add maxUndoStackSize parameter
+     // Verify circular buffer behavior
+   });
+   ```
+
+4. **undoOnExecutionFailure variations**
+   ```dart
+   test('undoOnExecutionFailure = false, error occurs', () async {
+     // Verify undo is NOT called
+   });
+
+   test('undoOnExecutionFailure = true, error occurs', () async {
+     // Verify undo IS called
+     // Verify undo state is pushed
+   });
+   ```
+
+5. **Concurrent execution attempts**
+   ```dart
+   test('Attempt execution while previous execution pending', () async {
+     // Should be blocked by isExecuting
+   });
+
+   test('Attempt undo while execution pending', () async {
+     // What should happen? Error? Queue? Block?
+   });
+   ```
+
+6. **Undo with complex state**
+   ```dart
+   test('Undo with large/complex TUndoState objects', () async {
+     // Test serialization if needed
+   });
+
+   test('Undo callback receives correct state snapshot', () async {
+     // Verify state passed to undo callback matches execution snapshot
+   });
+   ```
+
+**Estimated Breakdown**:
+- Test file setup: 30 min
+- 6 test categories × 30 min each: 3 hours
+- Edge case coverage: 30 min
+- **Total**: 4 hours
+
+---
+
+### Test Suite 2: CommandBuilder Comprehensive Tests
+
+**File**: `test/command_builder_test.dart` (expand existing)
+**Time**: 2 hours
+**Coverage Target**: 90%+
+
+**Current State**: Only 1 minimal test exists (line 1162)
+
+**Tests to Add**:
+
+1. **State transition tests**
+   ```dart
+   testWidgets('Builder shows whileExecuting during execution', (tester) async {
+     // Verify loading indicator appears
+   });
+
+   testWidgets('Builder shows onData after success', (tester) async {
+     // Verify data widget appears with correct value
+   });
+
+   testWidgets('Builder shows onError after error', (tester) async {
+     // Verify error widget appears with error object
+   });
+
+   testWidgets('Builder shows onSuccess for void commands', (tester) async {
+     // Verify success widget for commands with no return value
+   });
+   ```
+
+2. **Error cases**
+   ```dart
+   testWidgets('Builder with no onData or onSuccess throws', (tester) async {
+     // Currently assertion-only, should be runtime error
+   });
+
+   testWidgets('Builder handles null lastValue correctly', (tester) async {
+     // First execution, no previous value
+   });
+   ```
+
+3. **includeLastResultInCommandResults**
+   ```dart
+   testWidgets('Builder retains last value during error', (tester) async {
+     // Show stale data with error indicator
+   });
+
+   testWidgets('Builder retains last value during loading', (tester) async {
+     // Show stale data with loading indicator
+   });
+   ```
+
+4. **Rebuild optimization**
+   ```dart
+   testWidgets('Builder only rebuilds when command state changes', (tester) async {
+     // Verify no unnecessary rebuilds
+   });
+   ```
+
+**Estimated Breakdown**:
+- Expand test file: 15 min
+- 4 test categories × 30 min each: 2 hours
+- **Total**: 2 hours
+
+---
+
+### Test Suite 3: Disposal Edge Cases
+
+**File**: `test/disposal_test.dart` (new file)
+**Time**: 1 hour
+**Coverage Target**: 95%+
+
+**Tests to Add**:
+
+1. **Dispose during execution**
+   ```dart
+   test('Dispose async command while executing', () async {
+     // Start long-running command
+     // Dispose command
+     // Verify: isDisposing flag prevents notifications
+     // Verify: Future completion handled gracefully
+   });
+
+   test('Dispose sync command (immediate)', () {
+     // Verify disposal completes immediately
+   });
+   ```
+
+2. **Double disposal**
+   ```dart
+   test('Call dispose() twice', () {
+     // Should not throw
+     // Should not dispose twice
+   });
+   ```
+
+3. **Access after disposal**
+   ```dart
+   test('Execute after disposal throws', () {
+     // Should throw clear error
+   });
+
+   test('Read properties after disposal', () {
+     // What happens? Throw? Return stale? Define behavior
+   });
+   ```
+
+4. **Listener memory leaks**
+   ```dart
+   test('Listeners cleaned up after disposal', () async {
+     // Add 100 listeners
+     // Dispose command
+     // Verify all listeners removed (no memory leak)
+     // Use package:leak_tracker if available
+   });
+   ```
+
+**Estimated Breakdown**:
+- Test file setup: 15 min
+- 4 test categories × 15 min each: 45 min
+- **Total**: 1 hour
+
+---
+
+### Test Suite 4: Performance/Stress Tests (Optional)
+
+**File**: `test/performance_test.dart` (new file)
+**Time**: 1 hour (if included)
+**Coverage Target**: N/A (performance benchmarks)
+
+**Tests to Add**:
+
+1. **Rapid execution**
+   ```dart
+   test('1000 rapid executions complete successfully', () async {
+     // Stress test ValueListenable notifications
+   });
+   ```
+
+2. **Many listeners**
+   ```dart
+   test('100 concurrent listeners on one command', () async {
+     // Verify no performance degradation
+   });
+   ```
+
+3. **Large parameters/results**
+   ```dart
+   test('Command with 10MB parameter object', () async {
+     // Verify memory handling
+   });
+   ```
+
+4. **Memory leak detection**
+   ```dart
+   test('No memory leaks after 1000 command create/dispose cycles', () async {
+     // Create command, use it, dispose, repeat
+     // Monitor memory usage
+   });
+   ```
+
+**Note**: These tests require performance monitoring infrastructure. Consider optional for v8.1.0.
+
+---
+
+### Test Coverage Summary
+
+| Test Suite | Time | Priority | New Tests |
+|------------|------|----------|-----------|
+| UndoableCommand | 4 hours | **High** | ~15 tests |
+| CommandBuilder | 2 hours | **High** | ~8 tests |
+| Disposal | 1 hour | **High** | ~6 tests |
+| Performance | 1 hour | Low (optional) | ~4 tests |
+| **Total** | **6-7 hours** | - | **~30 tests** |
+
+---
+
+## Part C: Performance & API Enhancements (3-4 hours)
+
+**Goal**: Optimize hot paths and add missing ErrorFilter utilities
+
+### Enhancement 1: Optimize Exception Type Checking
+
+**File**: `lib/error_filters.dart`
+**Line**: 117
+**Time**: 15 minutes
+**Impact**: Eliminates object allocation on every error
+
+**Current Code** (creates Exception on every call):
+```dart
+@override
+ErrorReaction filter(Object error, StackTrace stackTrace) {
+  if (error.runtimeType == Exception().runtimeType) {  // ← Bad!
+    return _table[Exception] ?? ErrorReaction.firstLocalThenGlobalHandler;
+  }
+  return _table[error.runtimeType] ?? ErrorReaction.defaulErrorFilter;
+}
+```
+
+**Optimized Code**:
+```dart
+class TableErrorFilter implements ErrorFilter {
+  static final _exceptionRuntimeType = Exception().runtimeType;  // ← Cached
+
+  @override
+  ErrorReaction filter(Object error, StackTrace stackTrace) {
+    if (error.runtimeType == _exceptionRuntimeType) {
+      return _table[Exception] ?? ErrorReaction.firstLocalThenGlobalHandler;
+    }
+    return _table[error.runtimeType] ?? ErrorReaction.defaulErrorFilter;
+  }
+}
+```
+
+---
+
+### Enhancement 2: Make Stack Trace Capture Lazy
+
+**File**: `lib/command_it.dart`
+**Line**: 253
+**Time**: 1 hour
+**Impact**: Reduces overhead when detailed traces not needed
+
+**Current Code** (always captures if enabled):
+```dart
+if (Command.detailedStackTraces) {
+  _traceBeforeExecute = Trace.current();  // ← Always happens
+}
+```
+
+**Options**:
+
+**Option A: Lazy capture**
+```dart
+// Don't capture unless error occurs
+Trace? _getCapturedTrace() {
+  if (Command.detailedStackTraces && _traceBeforeExecute != null) {
+    return _traceBeforeExecute;
+  } else if (Command.detailedStackTraces) {
+    // Capture now (late, but better than nothing)
+    return Trace.current();
+  }
+  return null;
+}
+```
+
+**Option B: Lite mode**
+```dart
+static bool detailedStackTraces = true;
+static bool liteStackTraces = false;  // NEW: Capture only on error
+
+// In execute():
+if (Command.detailedStackTraces && !Command.liteStackTraces) {
+  _traceBeforeExecute = Trace.current();
+}
+```
+
+**Recommendation**: Option B (lite mode) - opt-in performance boost
+
+**Testing**: Measure before/after performance in tight loop
+
+---
+
+### Enhancement 3: ErrorFilter Composition Utilities
+
+**File**: `lib/error_filters.dart`
+**Time**: 1.5 hours
+**Impact**: Make complex filters easier to build
+
+**Add composition helpers** (already partially in plan Phase 7):
+
+```dart
+/// Combines multiple ErrorFilterFn functions with OR logic.
+/// Returns first non-null reaction, or null if all return null.
+ErrorFilterFn combineOr(List<ErrorFilterFn> filters) {
+  return (error, stackTrace) {
+    for (final filter in filters) {
+      final reaction = filter(error, stackTrace);
+      if (reaction != null) return reaction;
+    }
+    return null;
+  };
+}
+
+/// Combines multiple ErrorFilterFn functions with AND logic.
+/// All filters must agree (return same reaction) to match.
+ErrorFilterFn combineAnd(List<ErrorFilterFn> filters) {
+  return (error, stackTrace) {
+    ErrorReaction? agreed;
+    for (final filter in filters) {
+      final reaction = filter(error, stackTrace);
+      if (reaction == null) return null;  // One said no
+      if (agreed == null) {
+        agreed = reaction;
+      } else if (agreed != reaction) {
+        return null;  // Disagreement
+      }
+    }
+    return agreed;
+  };
+}
+
+/// Inverts a filter (NOT logic).
+ErrorFilterFn not(ErrorFilterFn filter, ErrorReaction elseReaction) {
+  return (error, stackTrace) {
+    final reaction = filter(error, stackTrace);
+    return reaction == null ? elseReaction : null;
+  };
+}
+```
+
+**Add tests** for composition logic (30 min)
+
+---
+
+### Enhancement 4: Common Error Filters
+
+**File**: `lib/error_filters.dart`
+**Time**: 45 minutes
+**Impact**: Reduce boilerplate for common cases
+
+**Add built-in filters for common scenarios**:
+
+```dart
+/// Filter for network-related errors.
+class NetworkErrorFilter implements ErrorFilter {
+  final ErrorReaction reaction;
+
+  const NetworkErrorFilter({
+    this.reaction = ErrorReaction.globalHandler,
+  });
+
+  @override
+  ErrorReaction filter(Object error, StackTrace stackTrace) {
+    if (error is SocketException ||
+        error is HttpException ||
+        error.runtimeType.toString().contains('Network')) {
+      return reaction;
+    }
+    return ErrorReaction.defaulErrorFilter;
+  }
+}
+
+/// Filter for timeout errors.
+class TimeoutErrorFilter implements ErrorFilter {
+  final ErrorReaction reaction;
+
+  const TimeoutErrorFilter({
+    this.reaction = ErrorReaction.localHandler,
+  });
+
+  @override
+  ErrorReaction filter(Object error, StackTrace stackTrace) {
+    if (error is TimeoutException) {
+      return reaction;
+    }
+    return ErrorReaction.defaulErrorFilter;
+  }
+}
+
+/// Filter for validation/argument errors.
+class ValidationErrorFilter implements ErrorFilter {
+  final ErrorReaction reaction;
+
+  const ValidationErrorFilter({
+    this.reaction = ErrorReaction.localHandler,
+  });
+
+  @override
+  ErrorReaction filter(Object error, StackTrace stackTrace) {
+    if (error is ArgumentError ||
+        error is FormatException ||
+        error is RangeError) {
+      return reaction;
+    }
+    return ErrorReaction.defaulErrorFilter;
+  }
+}
+```
+
+**Add tests** for each filter (15 min)
+
+---
+
+### Performance & API Time Summary
+
+| Enhancement | Time | Impact |
+|-------------|------|--------|
+| Exception type caching | 15 min | Low |
+| Lazy stack traces | 1 hour | Medium |
+| Composition utilities | 1.5 hours | High (usability) |
+| Common error filters | 45 min | Medium (usability) |
+| **Total** | **3-4 hours** | - |
+
+---
+
 ## Dependencies
 
 No new dependencies required. Uses existing:
@@ -1233,23 +1895,104 @@ No new dependencies required. Uses existing:
 
 ---
 
+## v8.x Series: Complete Time Breakdown
+
+### v8.0.3 (Patch Release)
+| Task | Time |
+|------|------|
+| Fix unsafe casts | 5 min |
+| Fix Future completion | 10 min |
+| Remove print statements | 20 min |
+| Document execute() | 30 min |
+| Document error flow (README) | 1 hour |
+| Remove deprecated code | 10 min |
+| **Total** | **~2-3 hours** |
+
+### v8.1.0 (Minor Release)
+| Part | Time |
+|------|------|
+| Part A: Hybrid Error Filtering | 6.5 hours |
+| Part B: Test Coverage | 6-7 hours |
+| Part C: Performance & Enhancements | 3-4 hours |
+| **Total** | **16-20 hours** |
+
+### Grand Total: 18-23 hours
+
+---
+
 ## Success Criteria
 
-✅ Feature is complete when:
+### v8.0.3
+✅ Patch complete when:
+1. All 6 critical fixes implemented
+2. All existing tests pass
+3. Documentation improved
+4. Published to pub.dev
+
+### v8.1.0
+✅ Minor release complete when:
 1. All factory methods accept `errorFilterFn` parameter
 2. Type checking works at compile time
 3. All existing tests pass
-4. New tests added with >90% coverage of new code
-5. Documentation includes examples
-6. Helper functions available and documented
-7. Backward compatible (no breaking changes)
-8. Published to pub.dev as v8.1.0
+4. **30+ new tests added** with >90% coverage
+5. **UndoableCommand**, **CommandBuilder**, **disposal** fully tested
+6. Performance optimizations implemented
+7. ErrorFilter composition utilities available
+8. Common error filters implemented
+9. Documentation includes examples for all new features
+10. Helper functions available and documented
+11. Backward compatible (no breaking changes)
+12. Published to pub.dev as v8.1.0
+
+---
+
+## Implementation Order
+
+**Recommended sequence:**
+
+1. **v8.0.3 first** (2-3 hours) - Critical fixes
+   - Get clean foundation
+   - Improve documentation
+   - Remove technical debt
+
+2. **v8.1.0 Part A** (6.5 hours) - Hybrid error filtering
+   - Core feature implementation
+   - Enables function-based filters
+
+3. **v8.1.0 Part C** (3-4 hours) - Performance & utilities
+   - While hybrid filtering fresh in mind
+   - Common filters use new errorFilterFn
+
+4. **v8.1.0 Part B** (6-7 hours) - Test coverage
+   - Test everything together
+   - Catch integration issues
+   - Stress test the complete package
+
+**Total timeline**: Can be done in 2-3 dedicated days or 1-2 weeks part-time.
 
 ---
 
 ## Notes
 
-- This is a **non-breaking change** - all existing code continues to work
-- Function filters are **additive** - objects are still first-class
+### v8.0.3
+- **Non-breaking** except for deprecated code removal
+- MockCommand signature change only affects test code
+- Safe to deploy immediately
+
+### v8.1.0
+- **Non-breaking** - all features are additive
+- Function filters complement objects, don't replace them
 - **No deprecations** in this version
-- Future v9.0.0 can remove `defaulErrorFilter` enum value
+- Maintains 100% backward compatibility
+- Sets foundation for v9.0.0 breaking changes
+
+### Future v9.0.0 Breaking Changes
+- See `COMMAND_EXTENSIONS_DESIGN.md` for lifecycle hooks
+- See `API_PROPOSAL_v8.1_v9.0.md` for complete API
+- Will include ErrorHandlerRegistry, RetryableCommand, and lifecycle hooks
+- Can remove typos (`defaulErrorFilter` → `defaultErrorFilter`)
+- Can simplify factory method proliferation
+- **Remove deprecated `debugErrorsThrowAlways`** (deprecated since v8.0.0 - July 2025, ~4 months)
+  - Lines 369-371: Remove usage in error handling
+  - Lines 471-474: Remove field declaration
+  - Migration: Use `reportAllExceptions` instead

@@ -229,11 +229,11 @@ abstract class Command<TParam, TResult> extends CustomValueNotifier<TResult> {
     /// Merge the external execution restricting with the internal
     /// isExecuting which also blocks execution if true
     _canExecute = (_restriction == null)
-        ? _isExecuting.map((val) => !val) as ValueNotifier<bool>
+        ? _isExecuting.map((val) => !val)
         : _restriction.combineLatest<bool, bool>(
             _isExecuting,
             (restriction, isExecuting) => !restriction && !isExecuting,
-          ) as ValueNotifier<bool>;
+          );
 
     /// decouple the async isExecuting from the sync isExecuting
     /// so that _canExecute will update immediately
@@ -242,7 +242,17 @@ abstract class Command<TParam, TResult> extends CustomValueNotifier<TResult> {
     });
   }
 
-  /// Calls the wrapped handler function with an optional input parameter
+  /// Executes the wrapped function with optional [param].
+  ///
+  /// If [restriction] is true (command disabled), execution is skipped and
+  /// [ifRestrictedExecuteInstead] is called instead (if provided).
+  ///
+  /// For async commands, sets [isExecuting] to true, updates [results] during execution,
+  /// and sets [isExecuting] to false when complete. Sync commands execute immediately
+  /// without [isExecuting] updates (accessing [isExecuting] on sync commands throws).
+  ///
+  /// Errors are routed according to [errorFilter] configuration (see [ErrorReaction]).
+  /// Use [executeWithFuture] if you need an awaitable result.
   void execute([TParam? param]) async {
     // its valid to dispose a command anytime, so we have to make sure this
     // doesn't create an invalid state
@@ -502,7 +512,7 @@ abstract class Command<TParam, TResult> extends CustomValueNotifier<TResult> {
   final CustomValueNotifier<bool> _isExecuting = CustomValueNotifier<bool>(
     false,
   );
-  late ValueNotifier<bool> _canExecute;
+  late ValueListenable<bool> _canExecute;
   late final ValueListenable<bool>? _restriction;
   final CustomValueNotifier<CommandError<TParam>?> _errors =
       CustomValueNotifier<CommandError<TParam>?>(
@@ -526,7 +536,10 @@ abstract class Command<TParam, TResult> extends CustomValueNotifier<TResult> {
     /// ValueNotifiers would dispose the command itself, we would get an exception
     Future<void>.delayed(Duration(milliseconds: 50), () {
       _commandResult.dispose();
-      _canExecute.dispose();
+      // _canExecute is created by listen_it operators which return disposable ValueListenables
+      if (_canExecute is ChangeNotifier) {
+        (_canExecute as ChangeNotifier).dispose();
+      }
       _isExecuting.dispose();
       _isExecutingAsync.dispose();
       _errors.dispose();
