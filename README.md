@@ -82,14 +82,16 @@ Our widget tree now looks like this:
     ),
   ),
   floatingActionButton: FloatingActionButton(
-    onPressed: _incrementCounterCommand,
+    onPressed: _incrementCounterCommand.execute,
     tooltip: 'Increment',
     child: Icon(Icons.add),
   ), // This trailing comma makes auto-formatting nicer for build methods.
 );
 ```
 
-As `Command` is a [callable class](https://dart.dev/guides/language/language-tour#callable-classes), so we can pass it directly to the `onPressed` handler of the `FloatingActionButton` and it will execute the wrapped function. The result of the function will get assigned to the `Command.value` so that the `ValueListenableBuilder` updates automatically.
+As `Command` is a [callable class](https://dart.dev/guides/language/language-tour#callable-classes), we use its `execute` method as a callback for the `onPressed` handler. The result of the function will get assigned to the `Command.value` so that the `ValueListenableBuilder` updates automatically.
+
+**Note**: While you can directly assign a Command instance (`onPressed: command`), this performs an implicit tear-off of the `call()` method and triggers the `implicit_call_tearoffs` linter warning in strict configurations. Use `command.execute` (explicit method tear-off) or `() => command()` (lambda) instead for clarity. See `test/callable_assignment_test.dart` for details.
 
 **This is a very basic demo! In a real all you wouldn't place a command in a Widgets State**
 
