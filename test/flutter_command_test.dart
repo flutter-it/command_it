@@ -1352,6 +1352,29 @@ void main() {
         findsOneWidget,
       );
     });
+
+    testWidgets('Test CommandBuilder with onSuccess',
+        (WidgetTester tester) async {
+      final testCommand = Command.createAsyncNoParamNoResult(() async {
+        await Future<void>.delayed(const Duration(milliseconds: 100));
+      });
+
+      await tester.pumpWidget(
+        MaterialApp(
+          home: Scaffold(
+            body: CommandBuilder<void, void>(
+              command: testCommand,
+              onSuccess: (context, _) => const Text('Success!'),
+            ),
+          ),
+        ),
+      );
+
+      testCommand.execute();
+      await tester.pump(const Duration(milliseconds: 200));
+
+      expect(find.text('Success!'), findsOneWidget);
+    });
   });
   group('UndoableCommand', () {
     test(
@@ -1451,6 +1474,118 @@ void main() {
         ).toString(),
         'CustomException: Intentional - from Command: Command Property not set for param: param,\nStacktrace: null',
       );
+
+      // Test isSuccess getter
+      const successResult = CommandResult<void, String>.data(null, 'success');
+      expect(successResult.isSuccess, true);
+
+      const loadingResult = CommandResult<void, String>.isLoading();
+      expect(loadingResult.isSuccess, false);
+
+      final errorResult = CommandResult<void, String>.error(
+        null,
+        Exception('error'),
+        ErrorReaction.none,
+        null,
+      );
+      expect(errorResult.isSuccess, false);
+
+      // Test hasData getter
+      expect(successResult.hasData, true);
+      expect(loadingResult.hasData, false);
+
+      // Test hashCode
+      const result1 = CommandResult<void, String>.data(null, 'data');
+      const result2 = CommandResult<void, String>.data(null, 'data');
+      expect(result1.hashCode, result2.hashCode);
+
+      // Test equality operator
+      expect(result1 == result2, true);
+      expect(result1 == loadingResult, false);
+
+      // Test isLoading with no parameter
+      const loadingNoParam = CommandResult<String?, String>.isLoading();
+      expect(loadingNoParam.isExecuting, true);
+      expect(loadingNoParam.paramData, null);
+
+      // Test CommandResult.blank()
+      const blankResult = CommandResult<String?, String>.blank();
+      expect(blankResult.isExecuting, false);
+      expect(blankResult.hasError, false);
+      expect(blankResult.data, null);
+      expect(blankResult.paramData, null);
+    });
+
+    test('Test CommandError equality and hashCode', () {
+      // Test equality based on paramData and error
+      final exception1 = Exception('test exception');
+      final error1 = CommandError<String>(
+        paramData: 'testParam',
+        error: exception1,
+        stackTrace: StackTrace.current,
+        errorReaction: ErrorReaction.localHandler,
+      );
+
+      final error2 = CommandError<String>(
+        paramData: 'testParam',
+        error: exception1, // Same exception instance
+        stackTrace: StackTrace.current,
+        errorReaction: ErrorReaction.localHandler,
+      );
+
+      // Should be equal (same paramData and error)
+      expect(error1 == error2, true);
+      expect(error1.hashCode, equals(error2.hashCode));
+
+      // Different error - should not be equal
+      final error3 = CommandError<String>(
+        paramData: 'testParam',
+        error: Exception('different'),
+        errorReaction: ErrorReaction.localHandler,
+      );
+      expect(error1 == error3, false);
+
+      // Different paramData - should not be equal
+      final error4 = CommandError<String>(
+        paramData: 'differentParam',
+        error: exception1,
+        errorReaction: ErrorReaction.localHandler,
+      );
+      expect(error1 == error4, false);
+    });
+
+    test('Test CommandError toString with originalError', () {
+      // Test toString with originalError (when error handler itself throws)
+      final originalError = CommandError<String>(
+        paramData: 'param',
+        error: Exception('Original error'),
+        errorReaction: ErrorReaction.localHandler,
+      );
+
+      final errorWithOriginal = CommandError<String>(
+        paramData: 'param',
+        error: Exception('Handler threw'),
+        stackTrace: StackTrace.current,
+        errorReaction: ErrorReaction.localHandler,
+        originalError: originalError,
+      );
+
+      // toString should include both the handler error and original error
+      final errorString = errorWithOriginal.toString();
+      expect(errorString, contains('Error handler exeption'));
+      expect(errorString, contains('Handler threw'));
+      expect(errorString, contains('Original error'));
+
+      // toString without originalError should have different format
+      final errorWithoutOriginal = CommandError<String>(
+        paramData: 'param',
+        error: Exception('Simple error'),
+        stackTrace: StackTrace.current,
+        errorReaction: ErrorReaction.localHandler,
+      );
+      expect(errorWithoutOriginal.toString(),
+          isNot(contains('Error handler exeption')));
+      expect(errorWithoutOriginal.toString(), contains('Simple error'));
     });
     test('Test MockCommand - execute', () {
       final mockCommand = MockCommand<void, String>(
@@ -1558,6 +1693,103 @@ void main() {
       expect(pureResultCollector.values, isNull);
       // expect(isExecutingCollector.values, [true, false]);
     });
+    test('Test MockCommand - restriction callback', () {
+      bool restrictedCallbackCalled = false;
+
+      final mockCommand = MockCommand<String, String>(
+        initialValue: 'Initial',
+        restriction: ValueNotifier<bool>(true), // Restricted
+        ifRestrictedExecuteInstead: (param) {
+          restrictedCallbackCalled = true;
+        },
+      );
+
+      mockCommand.execute('test');
+
+      expect(restrictedCallbackCalled, true);
+      expect(mockCommand.executionCount, 0); // Should not have executed
+
+      mockCommand.dispose();
+    });
+
+    test('Test MockCommand - includeLastResultInCommandResults with error', () {
+      final mockCommand = MockCommand<void, String>(
+        initialValue: 'last value',
+        includeLastResultInCommandResults: true,
+      );
+
+      mockCommand.queueResultsForNextExecuteCall([
+        CommandResult<void, String>.error(
+          null,
+          Exception('test'),
+          ErrorReaction.none,
+          null,
+        ),
+      ]);
+
+      mockCommand.execute();
+
+      // Should include last result when error occurs
+      expect(mockCommand.results.value.data, 'last value');
+
+      mockCommand.dispose();
+    });
+
+    test('Test MockCommand - noReturnValue flag', () {
+      final mockCommand = MockCommand<void, void>(
+        initialValue: null,
+        noReturnValue: true,
+      );
+
+      int notifyCount = 0;
+      mockCommand.listen((_, __) => notifyCount++);
+
+      mockCommand.execute();
+
+      expect(notifyCount, greaterThan(0));
+
+      mockCommand.dispose();
+    });
+
+    test('Test MockCommand - no values queued prints message', () {
+      final mockCommand = MockCommand<void, String>(
+        initialValue: 'initial',
+      );
+
+      // Execute without queueing values should print message
+      mockCommand.execute();
+
+      expect(mockCommand.executionCount, 1);
+
+      mockCommand.dispose();
+    });
+
+    test('Test MockCommand - logging handler with name', () {
+      final logMessages = <String?>[];
+      Command.loggingHandler = (name, result) {
+        logMessages.add(name);
+      };
+
+      final mockCommand = MockCommand<void, String>(
+        initialValue: 'initial',
+        name: 'TestMock',
+      );
+
+      mockCommand.endExecutionWithData('data');
+      expect(logMessages.contains('TestMock'), true);
+
+      logMessages.clear();
+      mockCommand.endExecutionWithError('error');
+      expect(logMessages.contains('TestMock'), true);
+
+      logMessages.clear();
+      mockCommand.endExecutionNoData();
+      expect(logMessages.contains('TestMock'), true);
+
+      Command.loggingHandler = null;
+      mockCommand.dispose();
+    });
+
     test('Test MockCommand - queueResultsForNextExecuteCall', () {
       final mockCommand = MockCommand<String, String>(
         initialValue: 'Initial Value',
@@ -1581,6 +1813,397 @@ void main() {
       ]);
       expect(pureResultCollector.values, ['Result']);
       // expect(isExecutingCollector.values, [true, false]);
+    });
+  });
+
+  group('ExecuteWithFuture Edge Cases', () {
+    test('executeWithFuture called twice returns same future', () async {
+      final command = Command.createAsyncNoParam<String>(
+        () async {
+          await Future<void>.delayed(const Duration(milliseconds: 100));
+          return 'result';
+        },
+        initialValue: '',
+      );
+
+      final future1 = command.executeWithFuture();
+      final future2 = command.executeWithFuture(); // Should return same future
+
+      expect(identical(future1, future2), true);
+
+      await Future<void>.delayed(const Duration(milliseconds: 150));
+
+      command.dispose();
+    });
+
+    test('Dispose while future is pending completes it', () async {
+      final command = Command.createAsyncNoParam<String?>(
+        () async {
+          await Future<void>.delayed(const Duration(milliseconds: 200));
+          return 'result';
+        },
+        initialValue: null,
+      );
+
+      final future = command.executeWithFuture();
+
+      // Dispose before execution completes
+      await Future<void>.delayed(const Duration(milliseconds: 50));
+      command.dispose();
+
+      // Future should complete with null after disposal
+      final result = await future;
+      expect(result, null);
+    });
+  });
+
+  group('Command Utilities and Properties', () {
+    setUp(() {
+      Command.globalExceptionHandler = null;
+      Command.reportAllExceptions = false;
+    });
+
+    tearDown(() {
+      Command.globalExceptionHandler = null;
+      Command.reportAllExceptions = false;
+    });
+
+    test('reportAllExceptions forces all errors to global handler', () async {
+      Object? globalHandlerCaught;
+      Object? localHandlerCaught;
+
+      Command.reportAllExceptions = true;
+      Command.globalExceptionHandler = (error, _) {
+        globalHandlerCaught = error.error;
+      };
+
+      final command = Command.createAsyncNoParamNoResult(
+        () async {
+          throw Exception('test exception');
+        },
+        errorFilter: const ErrorHandlerLocal(), // Should only go to local
+      );
+
+      command.errors.listen((err, _) {
+        if (err != null) localHandlerCaught = err.error;
+      });
+
+      command.execute();
+      await Future<void>.delayed(const Duration(milliseconds: 100));
+
+      // With reportAllExceptions=true, should call global handler even with local filter
+      expect(globalHandlerCaught, isA<Exception>());
+
+      command.dispose();
+    });
+
+    test('isExecutingSync property', () async {
+      final command = Command.createAsyncNoParam<String>(
+        () async {
+          await Future<void>.delayed(const Duration(milliseconds: 50));
+          return 'done';
+        },
+        initialValue: '',
+      );
+
+      expect(command.isExecutingSync.value, false);
+
+      command.execute();
+      // isExecutingSync should be true immediately
+      expect(command.isExecutingSync.value, true);
+
+      await Future<void>.delayed(const Duration(milliseconds: 100));
+      expect(command.isExecutingSync.value, false);
+
+      command.dispose();
+    });
+
+    test('Deprecated thrownExceptions property', () async {
+      final command = Command.createAsyncNoParamNoResult(
+        () async {
+          throw Exception('test error');
+        },
+      );
+
+      Object? caughtError;
+      // ignore: deprecated_member_use
+      command.thrownExceptions.listen((err, _) {
+        if (err != null) caughtError = err.error;
+      });
+
+      command.execute();
+      await Future<void>.delayed(const Duration(milliseconds: 100));
+
+      expect(caughtError, isA<Exception>());
+
+      command.dispose();
+    });
+
+    test('errorsDynamic property', () async {
+      final command = Command.createAsyncNoParamNoResult(
+        () async {
+          throw Exception('dynamic error');
+        },
+      );
+
+      Object? caughtError;
+      command.errorsDynamic.listen((err, _) {
+        if (err != null) caughtError = err.error;
+      });
+
+      command.execute();
+      await Future<void>.delayed(const Duration(milliseconds: 100));
+
+      expect(caughtError, isA<Exception>());
+
+      command.dispose();
+    });
+
+    test('clearErrors() method', () async {
+      final command = Command.createAsyncNoParamNoResult(
+        () async {
+          throw Exception('error to clear');
+        },
+      );
+
+      final errorCollector = <CommandError<void>?>[];
+      command.errors.listen((err, _) => errorCollector.add(err));
+
+      // Trigger error
+      command.execute();
+      await Future<void>.delayed(const Duration(milliseconds: 100));
+
+      expect(errorCollector.last?.error, isA<Exception>());
+
+      // Clear errors
+      command.clearErrors();
+      await Future<void>.delayed(const Duration(milliseconds: 10));
+
+      // Should have emitted null
+      expect(errorCollector.last, null);
+
+      command.dispose();
+    });
+  });
+
+  group('Sync Command Edge Cases', () {
+    test('Accessing isExecuting on sync command throws assertion', () {
+      final command = Command.createSyncNoParamNoResult(() {
+        // Simple action
+      });
+
+      expect(
+        () => command.isExecuting,
+        throwsA(isA<AssertionError>()),
+      );
+
+      command.dispose();
+    });
+
+    test('Sync command with null parameter and non-nullable type', () {
+      final command = Command.createSync<String, String>(
+        (param) => param.toUpperCase(),
+        initialValue: '',
+      );
+
+      // This should trigger the null assertion with message about null value
+      expect(
+        () => command.execute(null),
+        throwsA(isA<AssertionError>()),
+      );
+
+      command.dispose();
+    });
+
+    test('Sync command executes immediately without isExecuting state', () {
+      int executionCount = 0;
+
+      final command = Command.createSyncNoParam<int>(
+        () {
+          executionCount++;
+          return executionCount;
+        },
+        initialValue: 0,
+      );
+
+      setupCollectors(command);
+
+      // Execute
+      command.execute();
+
+      // Should complete immediately
+      expect(executionCount, 1);
+      expect(command.value, 1);
+
+      command.dispose();
+    });
+  });
+
+  group('Chain.capture Tests', () {
+    setUp(() {
+      Command.globalExceptionHandler = null;
+      Command.reportErrorHandlerExceptionsToGlobalHandler = true;
+    });
+
+    tearDown(() {
+      Command.useChainCapture = false; // Reset to default
+      Command.globalExceptionHandler = null;
+    });
+
+    test('Chain.capture enabled for no-param command (success)', () async {
+      Command.useChainCapture = true;
+      int executionCount = 0;
+
+      final command = Command.createAsyncNoParam<String>(
+        () async {
+          executionCount++;
+          await Future<void>.delayed(const Duration(milliseconds: 10));
+          return 'result-$executionCount';
+        },
+        initialValue: '',
+      );
+
+      setupCollectors(command);
+
+      command.execute();
+      await Future<void>.delayed(const Duration(milliseconds: 50));
+
+      expect(executionCount, 1);
+      expect(command.value, 'result-1');
+      expect(pureResultCollector.values, ['result-1']);
+
+      command.dispose();
+    });
+
+    test('Chain.capture enabled for no-param command (error)', () async {
+      Command.useChainCapture = true;
+      Object? capturedError;
+
+      final command = Command.createAsyncNoParam<String>(
+        () async {
+          await Future<void>.delayed(const Duration(milliseconds: 10));
+          throw CustomException('Chain.capture error');
+        },
+        initialValue: '',
+      );
+
+      setupCollectors(command);
+      command.errors.listen((err, _) {
+        if (err != null) capturedError = err.error;
+      });
+
+      command.execute();
+      await Future<void>.delayed(const Duration(milliseconds: 50));
+
+      expect(capturedError, isA<CustomException>());
+      expect((capturedError as CustomException).message, 'Chain.capture error');
+
+      command.dispose();
+    });
+
+    test('Chain.capture enabled for command with param (success)', () async {
+      Command.useChainCapture = true;
+      final capturedParams = <String>[];
+
+      final command = Command.createAsync<String, String>(
+        (param) async {
+          capturedParams.add(param);
+          await Future<void>.delayed(const Duration(milliseconds: 10));
+          return 'processed-$param';
+        },
+        initialValue: '',
+      );
+
+      setupCollectors(command);
+
+      command.execute('test1');
+      await Future<void>.delayed(const Duration(milliseconds: 50));
+
+      expect(capturedParams, ['test1']);
+      expect(command.value, 'processed-test1');
+      expect(pureResultCollector.values, ['processed-test1']);
+
+      command.dispose();
+    });
+
+    test('Chain.capture enabled for command with param (error)', () async {
+      Command.useChainCapture = true;
+      Object? capturedError;
+      StackTrace? capturedStackTrace;
+
+      final command = Command.createAsync<String, String>(
+        (param) async {
+          await Future<void>.delayed(const Duration(milliseconds: 10));
+          throw CustomException('Error for: $param');
+        },
+        initialValue: '',
+      );
+
+      setupCollectors(command);
+      command.errors.listen((err, _) {
+        if (err != null) {
+          capturedError = err.error;
+          capturedStackTrace = err.stackTrace;
+        }
+      });
+
+      command.execute('error-test');
+      await Future<void>.delayed(const Duration(milliseconds: 50));
+
+      expect(capturedError, isA<CustomException>());
+      expect(
+          (capturedError as CustomException).message, 'Error for: error-test');
+      expect(capturedStackTrace, isNotNull);
+
+      command.dispose();
+    });
+
+    test('Chain.capture disabled (default behavior)', () async {
+      // Verify Chain.capture is off by default
+      expect(Command.useChainCapture, false);
+
+      final command = Command.createAsyncNoParam<String>(
+        () async {
+          await Future<void>.delayed(const Duration(milliseconds: 10));
+          return 'no-chain-capture';
+        },
+        initialValue: '',
+      );
+
+      setupCollectors(command);
+
+      command.execute();
+      await Future<void>.delayed(const Duration(milliseconds: 50));
+
+      expect(command.value, 'no-chain-capture');
+      expect(pureResultCollector.values, ['no-chain-capture']);
+
+      command.dispose();
+    });
+
+    test('Chain.capture with completer already completed edge case', () async {
+      Command.useChainCapture = true;
+      int errorHandlerCalls = 0;
+
+      final command = Command.createAsyncNoParam<String>(
+        () async {
+          // This should complete normally
+          return 'completed';
+        },
+        initialValue: '',
+      );
+
+      command.errors.listen((err, _) {
+        if (err != null) errorHandlerCalls++;
+      });
+
+      command.execute();
+      await Future<void>.delayed(const Duration(milliseconds: 50));
+
+      expect(command.value, 'completed');
+      expect(errorHandlerCalls, 0); // No errors expected
+
+      command.dispose();
     });
   });
 }

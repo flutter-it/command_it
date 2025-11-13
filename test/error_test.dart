@@ -84,6 +84,58 @@ void main() {
         ErrorReaction.defaulErrorFilter,
       );
     });
+    test('ErrorFilerConstant', () {
+      const filter = ErrorFilerConstant(ErrorReaction.localHandler);
+
+      expect(
+        filter.filter(Error(), StackTrace.current),
+        ErrorReaction.localHandler,
+      );
+      expect(
+        filter.filter(Exception(), StackTrace.current),
+        ErrorReaction.localHandler,
+      );
+      expect(
+        filter.filter('any error', StackTrace.current),
+        ErrorReaction.localHandler,
+      );
+    });
+    test('ErrorHandlerGlobalIfNoLocal', () {
+      const filter = ErrorHandlerGlobalIfNoLocal();
+
+      expect(
+        filter.filter(Error(), StackTrace.current),
+        ErrorReaction.firstLocalThenGlobalHandler,
+      );
+      expect(
+        filter.filter(Exception(), StackTrace.current),
+        ErrorReaction.firstLocalThenGlobalHandler,
+      );
+    });
+    test('ErrorHandlerLocal', () {
+      const filter = ErrorHandlerLocal();
+
+      expect(
+        filter.filter(Error(), StackTrace.current),
+        ErrorReaction.localHandler,
+      );
+      expect(
+        filter.filter(Exception(), StackTrace.current),
+        ErrorReaction.localHandler,
+      );
+    });
+    test('ErrorHandlerLocalAndGlobal', () {
+      const filter = ErrorHandlerLocalAndGlobal();
+
+      expect(
+        filter.filter(Error(), StackTrace.current),
+        ErrorReaction.localAndGlobalHandler,
+      );
+      expect(
+        filter.filter(Exception(), StackTrace.current),
+        ErrorReaction.localAndGlobalHandler,
+      );
+    });
   });
   group('ErrorRection.none', () {
     test(
