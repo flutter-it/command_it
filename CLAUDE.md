@@ -64,12 +64,12 @@ flutter run
 
 **CommandSync<TParam, TResult>** (`sync_command.dart`)
 - Wraps synchronous functions
-- **Does NOT support `isExecuting`** - will assert if accessed (sync functions don't give UI time to react)
+- **Does NOT support `isRunning`** - will assert if accessed (sync functions don't give UI time to react)
 - Execution happens immediately on call
 
 **CommandAsync<TParam, TResult>** (`async_command.dart`)
 - Wraps asynchronous functions
-- Full support for `isExecuting` tracking
+- Full support for `isRunning` tracking
 - Updates UI progressively: before execution → during → after completion
 
 **UndoableCommand<TParam, TResult, TUndoState>** (`undoable_command.dart`)
@@ -112,10 +112,10 @@ Every Command exposes multiple `ValueListenable` interfaces for different aspect
    - `data`: The result value
    - `paramData`: Parameter passed to command
    - `error`: Any error that occurred
-   - `isExecuting`: Current execution state
-3. **`.isExecuting`** (`ValueListenable<bool>`): Async only, updated asynchronously
-4. **`.isExecutingSync`** (`ValueListenable<bool>`): Synchronous version for use as restrictions
-5. **`.canExecute`** (`ValueListenable<bool>`): Computed as `!restriction && !isExecuting`
+   - `isRunning`: Current execution state
+3. **`.isRunning`** (`ValueListenable<bool>`): Async only, updated asynchronously
+4. **`.isRunningSync`** (`ValueListenable<bool>`): Synchronous version for use as restrictions
+5. **`.canRun`** (`ValueListenable<bool>`): Computed as `!restriction && !isRunning`
 6. **`.errors`** (`ValueListenable<CommandError<TParam>?>`): Error-specific notifications
 
 ### Error Handling System
@@ -154,12 +154,12 @@ Command.detailedStackTraces = true; // Capture enhanced traces
 Commands can be conditionally disabled via `restriction` parameter:
 
 ```dart
-final restriction = ValueNotifier<bool>(false); // false = can execute
+final restriction = ValueNotifier<bool>(false); // false = can run
 final cmd = Command.createAsync<String, List<Data>>(
   fetchData,
   [],
   restriction: restriction, // Command disabled when true
-  ifRestrictedExecuteInstead: (param) {
+  ifRestrictedRunInstead: (param) {
     // Optional: handle restricted execution (e.g., show login)
   },
 );
@@ -167,7 +167,7 @@ final cmd = Command.createAsync<String, List<Data>>(
 
 **Important**: `restriction: true` means DISABLED, `false` means enabled.
 
-The `.canExecute` property automatically combines restriction with execution state.
+The `.canRun` property automatically combines restriction with execution state.
 
 ### Widget Integration
 
@@ -175,7 +175,7 @@ The `.canExecute` property automatically combines restriction with execution sta
 ```dart
 CommandBuilder<String, List<Data>>(
   command: myCommand,
-  whileExecuting: (context, _) => CircularProgressIndicator(),
+  whileRunning: (context, _) => CircularProgressIndicator(),
   onData: (context, data, _) => DataList(data),
   onError: (context, error, param) => ErrorWidget(error),
   onSuccess: (context, _) => SuccessWidget(), // For void result commands
@@ -185,7 +185,7 @@ CommandBuilder<String, List<Data>>(
 **Extension method** for use with get_it_mixin/provider/flutter_hooks:
 ```dart
 result.toWidget(
-  whileExecuting: (lastValue, _) => LoadingWidget(),
+  whileRunning: (lastValue, _) => LoadingWidget(),
   onResult: (data, _) => DataWidget(data),
   onError: (error, lastValue, paramData) => ErrorWidget(error),
 )
@@ -198,11 +198,11 @@ result.toWidget(
 Tests use a `Collector<T>` helper class to accumulate ValueListenable emissions:
 
 ```dart
-final Collector<bool> canExecuteCollector = Collector<bool>();
+final Collector<bool> canRunCollector = Collector<bool>();
 final Collector<CommandResult> cmdResultCollector = Collector<CommandResult>();
 
 void setupCollectors(Command command) {
-  command.canExecute.listen((b, _) => canExecuteCollector(b));
+  command.canRun.listen((b, _) => canRunCollector(b));
   command.results.listen((r, _) => cmdResultCollector(r));
   // ... etc
 }
@@ -210,7 +210,7 @@ void setupCollectors(Command command) {
 // In test:
 setupCollectors(command);
 command.run();
-expect(canExecuteCollector.values, [true, false, true]);
+expect(canRunCollector.values, [true, false, true]);
 ```
 
 ### Async Test Utilities
@@ -223,7 +223,7 @@ expect(canExecuteCollector.values, [true, false, true]);
 
 ```bash
 # Run single test by name
-flutter test --name "Execute simple sync action No Param No Result"
+flutter test --name "Run simple sync action No Param No Result"
 
 # Run test group
 flutter test --name "Synchronous Command Testing"
@@ -267,7 +267,7 @@ textChangedCommand.debounce(Duration(milliseconds: 500)).listen((text, _) {
 final saveCmd = Command.createAsync<Data, void>(
   saveData,
   null,
-  restriction: loadCmd.isExecutingSync, // Can't save while loading
+  restriction: loadCmd.isRunningSync, // Can't save while loading
 );
 ```
 
@@ -304,8 +304,8 @@ RefreshIndicator(
    - `.errors` emits `null` at start of each execution to clear previous errors
    - Use `.where((x) => x != null)` from listen_it to filter these out
 
-4. **Sync commands and isExecuting**:
-   - Accessing `.isExecuting` on sync commands throws assertion
+4. **Sync commands and isRunning**:
+   - Accessing `.isRunning` on sync commands throws assertion
    - Use async commands if you need execution state tracking
 
 5. **Global vs Local error handlers**:

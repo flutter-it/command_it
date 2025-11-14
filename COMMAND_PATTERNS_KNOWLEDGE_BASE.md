@@ -621,7 +621,7 @@ errorFilter: ErrorTypeFilter({
     context.l10n.networkError,
     action: ToastAction(
       label: context.l10n.retry,
-      onPressed: () => command.execute(lastParam),
+      onPressed: () => command.run(lastParam),
     ),
   );
 });
@@ -892,7 +892,7 @@ late final loadDataCommand = Command.createAsyncNoParam<Data>(_loadData, null);
 void initState() {
   super.initState();
 
-  loadDataCommand.isExecuting.listen((isLoading, _) {
+  loadDataCommand.isRunning.listen((isLoading, _) {
     setState(() {
       _isLoading = isLoading;
     });
@@ -1022,8 +1022,8 @@ late final createOrderCommand = Command.createAsync<OrderParams, Order>(
     final order = await api.createOrder(params);
 
     // Refresh related data
-    getOrdersCommand.execute();
-    getBalanceCommand.execute();
+    getOrdersCommand.run();
+    getBalanceCommand.run();
 
     // Show success feedback
     toastService.showSuccess(context.l10n.orderCreated);
@@ -1050,7 +1050,7 @@ late final deletePaymentMethodCommand = Command.createAsyncNoResult<String>(
       );
 
       if (nextMethod != null) {
-        await setDefaultPaymentMethodCommand.executeWithFuture(nextMethod.id);
+        await setDefaultPaymentMethodCommand.runAsync(nextMethod.id);
       }
     }
 
@@ -1058,7 +1058,7 @@ late final deletePaymentMethodCommand = Command.createAsyncNoResult<String>(
     await api.deletePaymentMethod(paymentMethodId);
 
     // Refresh list
-    getPaymentMethodsCommand.execute();
+    getPaymentMethodsCommand.run();
   },
 );
 ```
@@ -1071,9 +1071,9 @@ late final deletePaymentMethodCommand = Command.createAsyncNoResult<String>(
 late final refreshDashboardCommand = Command.createAsyncNoParamNoResult(
   () async {
     await Future.wait([
-      getOrdersCommand.executeWithFuture(),
-      getNotificationsCommand.executeWithFuture(),
-      getBalanceCommand.executeWithFuture(),
+      getOrdersCommand.runAsync(),
+      getNotificationsCommand.runAsync(),
+      getBalanceCommand.runAsync(),
     ]);
   },
 );
@@ -1089,7 +1089,7 @@ late final loadDataCommand = Command.createAsyncNoParam<Data>(_loadData, null);
 late final saveDataCommand = Command.createAsync<Data, void>(
   _saveData,
   null,
-  restriction: loadDataCommand.isExecutingSync, // Can't save while loading
+  restriction: loadDataCommand.isRunningSync, // Can't save while loading
 );
 ```
 
@@ -1103,10 +1103,10 @@ late final purchaseListingCommand = Command.createAsync<PurchaseParams, Order>(
     final orderDto = await api.storeOrder(params);
 
     // Refresh listing (will show "sold" state)
-    params.listing.loadFullTargetCommand.execute();
+    params.listing.loadFullTargetCommand.run();
 
     // Refresh user's balance
-    userManager.getBalanceCommand.execute();
+    userManager.getBalanceCommand.run();
 
     // Return new order proxy
     return createOrderProxy(orderDto);
@@ -1384,19 +1384,19 @@ errorFilter: const GlobalOnlyErrorFilter(),
 // User sees generic "Something went wrong" toast
 ```
 
-### 8. Use executeWithFuture for Async Coordination
+### 8. Use runAsync for Async Coordination
 
 **Pattern**: When you need to await command completion
 
 ```dart
 // ✅ GOOD: Await command in async function
 Future<void> onRefresh() async {
-  await loadDataCommand.executeWithFuture();
+  await loadDataCommand.runAsync();
 }
 
 // ✅ GOOD: Use with RefreshIndicator
 RefreshIndicator(
-  onRefresh: () => loadDataCommand.executeWithFuture(),
+  onRefresh: () => loadDataCommand.runAsync(),
   child: ListView(...),
 )
 ```
@@ -1425,7 +1425,7 @@ late final loadDataCommand = Command.createAsync(
 );
 ```
 
-### 2. ❌ Using Sync Commands When You Need isExecuting
+### 2. ❌ Using Sync Commands When You Need isRunning
 
 **Problem**: Sync commands don't support execution state tracking
 
@@ -1434,16 +1434,16 @@ late final loadDataCommand = Command.createAsync(
 late final processDataCommand = Command.createSync(_processData, null);
 
 // This will throw assertion error:
-processDataCommand.isExecuting.listen(...); // ❌ ASSERTION FAILS
+processDataCommand.isRunning.listen(...); // ❌ ASSERTION FAILS
 ```
 
 **Solution**: Use async commands for long-running operations
 
 ```dart
-// ✅ GOOD: Async command supports isExecuting
+// ✅ GOOD: Async command supports isRunning
 late final processDataCommand = Command.createAsync(_processData, null);
 
-processDataCommand.isExecuting.listen((isLoading, _) {
+processDataCommand.isRunning.listen((isLoading, _) {
   setState(() => _isLoading = isLoading);
 });
 ```
