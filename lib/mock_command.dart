@@ -5,13 +5,13 @@ part of './command_it.dart';
 class MockCommand<TParam, TResult> extends Command<TParam, TResult> {
   List<CommandResult<TParam, TResult>>? returnValuesForNextExecute;
 
-  /// the last value that was passed when execute or the command directly was called
+  /// the last value that was passed when run or the command directly was called
   TParam? lastPassedValueToExecute;
 
-  /// Number of times execute or the command directly was called
+  /// Number of times run or the command directly was called
   int executionCount = 0;
 
-  /// constructor that can take an optional `ValueListenable` to control if the command can be execute
+  /// constructor that can take an optional `ValueListenable` to control if the command can be run
   /// if the wrapped function has `void` as return type [noResult] has to be `true`
   MockCommand({
     required super.initialValue,
@@ -41,31 +41,31 @@ class MockCommand<TParam, TResult> extends Command<TParam, TResult> {
   /// Can either be called directly or by calling the object itself because Commands are callable classes
   /// Will increase [executionCount] and assign [lastPassedValueToExecute] the value of [param]
   /// If you have queued a result with [queueResultsForNextExecuteCall] it will be copies tho the output stream.
-  /// [isExecuting], [canExecute] and [results] will work as with a real command.
+  /// [isRunning], [canRun] and [results] will work as with a real command.
   @override
-  void execute([TParam? param]) {
+  void run([TParam? param]) {
     if (_restriction?.value == true) {
-      _ifRestrictedExecuteInstead?.call(param);
+      _ifRestrictedRunInstead?.call(param);
       return;
     }
-    if (!_canExecute.value) {
+    if (!_canRun.value) {
       return;
     }
 
-    _isExecuting.value = true;
+    _isRunning.value = true;
     executionCount++;
     lastPassedValueToExecute = param;
     // ignore: avoid_print
     print('Called Execute');
     if (returnValuesForNextExecute != null) {
       returnValuesForNextExecute!.map((entry) {
-        if ((entry.isExecuting || entry.hasError) &&
+        if ((entry.isRunning || entry.hasError) &&
             _includeLastResultInCommandResults) {
           return CommandResult<TParam, TResult>(
             param,
             value,
             entry.error,
-            entry.isExecuting,
+            entry.isRunning,
           );
         }
         return entry;
@@ -76,8 +76,18 @@ class MockCommand<TParam, TResult> extends Command<TParam, TResult> {
       // ignore: avoid_print
       print('No values for execution queued');
     }
-    _isExecuting.value = false;
+    _isRunning.value = false;
   }
+
+  /// Deprecated: Use [run] instead.
+  /// This method will be removed in v10.0.0.
+  @Deprecated(
+    'Use run() instead. '
+    'This will be removed in v10.0.0. '
+    'See BREAKING_CHANGE_EXECUTE_TO_RUN.md for migration guide.',
+  )
+  @override
+  void execute([TParam? param]) => run(param);
 
   /// For a more fine grained control to simulate the different states of an [Command]
   /// there are these functions
@@ -93,7 +103,7 @@ class MockCommand<TParam, TResult> extends Command<TParam, TResult> {
       null,
       true,
     );
-    _isExecuting.value = true;
+    _isRunning.value = true;
   }
 
   /// `endExecutionWithData` will issue a [CommandResult] with
@@ -111,7 +121,7 @@ class MockCommand<TParam, TResult> extends Command<TParam, TResult> {
     if (_name != null) {
       Command.loggingHandler?.call(_name, _commandResult.value);
     }
-    _isExecuting.value = false;
+    _isRunning.value = false;
   }
 
   /// `endExecutionWithData` will issue a [CommandResult] with
@@ -124,7 +134,7 @@ class MockCommand<TParam, TResult> extends Command<TParam, TResult> {
       Exception(message),
       StackTrace.current,
     );
-    _isExecuting.value = false;
+    _isRunning.value = false;
     if (_name != null) {
       Command.loggingHandler?.call(_name, _commandResult.value);
     }
@@ -144,12 +154,12 @@ class MockCommand<TParam, TResult> extends Command<TParam, TResult> {
     if (_name != null) {
       Command.loggingHandler?.call(_name, _commandResult.value);
     }
-    _isExecuting.value = false;
+    _isRunning.value = false;
   }
 
   @override
-  Future<TResult> _execute([TParam? param]) async {
-    // TODO: implement _execute
+  Future<TResult> _run([TParam? param]) async {
+    // Not implemented - MockCommand overrides run() directly instead of using _run()
     throw UnimplementedError();
   }
 }

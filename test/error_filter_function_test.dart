@@ -67,7 +67,7 @@ void main() {
       Command.globalExceptionHandler =
           (error, _) => globalHandlerCaught = error.error;
 
-      testCommand.execute();
+      testCommand.run();
       await Future<void>.delayed(const Duration(milliseconds: 100));
 
       expect(globalHandlerCaught, isA<NetworkException>());
@@ -90,7 +90,7 @@ void main() {
       Command.globalExceptionHandler =
           (error, _) => globalHandlerCaught = error.error;
 
-      testCommand.execute();
+      testCommand.run();
       await Future<void>.delayed(const Duration(milliseconds: 100));
 
       expect(localHandlerCaught, isA<CommandError<void>>());
@@ -115,7 +115,7 @@ void main() {
       Command.globalExceptionHandler =
           (error, _) => globalHandlerCaught = error.error;
 
-      testCommand.execute();
+      testCommand.run();
       await Future<void>.delayed(const Duration(milliseconds: 100));
 
       expect(localHandlerCaught, null);
@@ -138,7 +138,7 @@ void main() {
       Command.globalExceptionHandler =
           (error, _) => globalHandlerCaught = error.error;
 
-      expectLater(() => testCommand.execute(), throwsA(isA<Exception>()));
+      expectLater(() => testCommand.run(), throwsA(isA<Exception>()));
       await Future<void>.delayed(const Duration(milliseconds: 100));
 
       expect(localHandlerCaught, null);
@@ -177,7 +177,7 @@ void main() {
 
       // Test NetworkException -> globalHandler
       commands[0].errors.listen((error, _) => localHandlerCaught = error);
-      commands[0].execute();
+      commands[0].run();
       await Future<void>.delayed(const Duration(milliseconds: 100));
       expect(globalHandlerCaught, isA<NetworkException>());
       expect(localHandlerCaught, null);
@@ -188,7 +188,7 @@ void main() {
 
       // Test TimeoutException -> localHandler
       commands[1].errors.listen((error, _) => localHandlerCaught = error);
-      commands[1].execute();
+      commands[1].run();
       await Future<void>.delayed(const Duration(milliseconds: 100));
       expect(localHandlerCaught, isA<CommandError<void>>());
       expect(globalHandlerCaught, null);
@@ -216,7 +216,7 @@ void main() {
       Command.globalExceptionHandler =
           (error, _) => globalHandlerCaught = error.error;
 
-      testCommand.execute();
+      testCommand.run();
       await Future<void>.delayed(const Duration(milliseconds: 100));
 
       // Should use default (globalHandler)
@@ -262,7 +262,7 @@ void main() {
       Command.globalExceptionHandler =
           (error, _) => globalHandlerCaught = error.error;
 
-      testCommand.execute();
+      testCommand.run();
 
       expect(localHandlerCaught, isA<CommandError<void>>());
       expect((localHandlerCaught as CommandError<void>).error,
@@ -290,7 +290,7 @@ void main() {
       Command.globalExceptionHandler =
           (error, _) => globalHandlerCaught = error.error;
 
-      testCommand.execute('test-param');
+      testCommand.run('test-param');
       await Future<void>.delayed(const Duration(milliseconds: 100));
 
       expect(globalHandlerCaught, isA<NetworkException>());
@@ -318,7 +318,7 @@ void main() {
       Command.globalExceptionHandler =
           (error, _) => globalHandlerCaught = error.error;
 
-      testCommand.execute();
+      testCommand.run();
       await Future<void>.delayed(const Duration(milliseconds: 100));
 
       expect(localHandlerCaught, isA<CommandError<void>>());
@@ -352,7 +352,7 @@ void main() {
       Command.globalExceptionHandler =
           (error, _) => globalHandlerCaught = error.error;
 
-      testCommand.execute();
+      testCommand.run();
       await Future<void>.delayed(const Duration(milliseconds: 100));
 
       expect(globalHandlerCaught, isA<ValidationError>());
@@ -379,7 +379,7 @@ void main() {
       Command.globalExceptionHandler =
           (error, _) => globalHandlerCaught = error.error;
 
-      testCommand.execute();
+      testCommand.run();
       await Future<void>.delayed(const Duration(milliseconds: 100));
 
       expect(localHandlerCaught, isA<CommandError<void>>());
@@ -405,7 +405,7 @@ void main() {
       Command.globalExceptionHandler =
           (error, _) => globalHandlerCaught = error.error;
 
-      testCommand.execute();
+      testCommand.run();
       await Future<void>.delayed(const Duration(milliseconds: 100));
 
       // Should call local since it exists
@@ -430,7 +430,7 @@ void main() {
       Command.globalExceptionHandler =
           (error, _) => globalHandlerCaught = error.error;
 
-      testCommand.execute();
+      testCommand.run();
       await Future<void>.delayed(const Duration(milliseconds: 100));
 
       // Should call global since no local exists
@@ -452,7 +452,7 @@ void main() {
       Command.globalExceptionHandler =
           (error, _) => globalHandlerCaught = error.error;
 
-      testCommand.execute();
+      testCommand.run();
       await Future<void>.delayed(const Duration(milliseconds: 100));
 
       expect(globalHandlerCaught, isA<NetworkException>());

@@ -23,8 +23,8 @@ part './undoable_command.dart';
 /// Combined execution state of a `Command` represented using four of its fields.
 /// A [CommandResult] will be issued for any state change of any of its fields
 /// During normal command execution you will get this items by listening at the command's [.results] ValueListenable.
-/// 1. If the command was just newly created you will get `param data, null, null, false` (paramData, data, error, isExecuting)
-/// 2. When calling execute: `param data, null, null, true`
+/// 1. If the command was just newly created you will get `param data, null, null, false` (paramData, data, error, isRunning)
+/// 2. When calling run: `param data, null, null, true`
 /// 3. When execution finishes: `param data, the result, null, false`
 /// `param data` is the data that you pass as parameter when calling the command
 class CommandResult<TParam, TResult> {
@@ -32,7 +32,7 @@ class CommandResult<TParam, TResult> {
   final TResult? data;
   final bool isUndoValue;
   final Object? error;
-  final bool isExecuting;
+  final bool isRunning;
   final ErrorReaction? errorReaction;
   final StackTrace? stackTrace;
 
@@ -40,7 +40,7 @@ class CommandResult<TParam, TResult> {
     this.paramData,
     this.data,
     this.error,
-    this.isExecuting, {
+    this.isRunning, {
     this.errorReaction,
     this.stackTrace,
     this.isUndoValue = false,
@@ -68,12 +68,21 @@ class CommandResult<TParam, TResult> {
 
   const CommandResult.blank() : this(null, null, null, false);
 
-  /// if a CommandResult is not executing and has no error, it is considered successful
+  /// if a CommandResult is not running and has no error, it is considered successful
   /// if the command has no return value, this can be used to check if the command was executed successfully
-  bool get isSuccess => !isExecuting && !hasError;
+  bool get isSuccess => !isRunning && !hasError;
   bool get hasData => data != null;
 
   bool get hasError => error != null && !isUndoValue;
+
+  /// Deprecated: Use [isRunning] instead.
+  /// This getter will be removed in v10.0.0.
+  @Deprecated(
+    'Use isRunning instead. '
+    'This will be removed in v10.0.0. '
+    'See BREAKING_CHANGE_EXECUTE_TO_RUN.md for migration guide.',
+  )
+  bool get isExecuting => isRunning;
 
   @override
   bool operator ==(Object other) =>
@@ -81,19 +90,19 @@ class CommandResult<TParam, TResult> {
       other.paramData == paramData &&
       other.data == data &&
       other.error == error &&
-      other.isExecuting == isExecuting;
+      other.isRunning == isRunning;
 
   @override
   int get hashCode => hash4(
         data.hashCode,
         error.hashCode,
-        isExecuting.hashCode,
+        isRunning.hashCode,
         paramData.hashCode,
       );
 
   @override
   String toString() {
-    return 'ParamData $paramData - Data: $data - HasError: $hasError - IsExecuting: $isExecuting';
+    return 'ParamData $paramData - Data: $data - HasError: $hasError - IsRunning: $isRunning';
   }
 }
 
@@ -169,10 +178,10 @@ typedef ErrorFilterFn = ErrorReaction Function(
   StackTrace stackTrace,
 );
 
-/// [Command] capsules a given handler function that can then be executed by its [execute] method.
+/// [Command] capsules a given handler function that can then be run by its [run] method.
 /// The result of this method is then published through its `ValueListenable` interface
 /// Additionally it offers other `ValueListenables` for it's current execution state,
-/// if the command can be executed and for all possibly thrown exceptions during command execution.
+/// if the command can be run and for all possibly thrown exceptions during command execution.
 ///
 /// [Command] implements the `ValueListenable` interface so you can register notification handlers
 ///  directly to the [Command] which emits the results of the wrapped function.
@@ -183,7 +192,7 @@ typedef ErrorFilterFn = ErrorReaction Function(
 /// with Flutter `ValueListenableBuilder`  because you have all state information at one place.
 ///
 /// An [Command] is a generic class of type [Command<TParam, TResult>]
-/// where [TParam] is the type of data that is passed when calling [execute] and
+/// where [TParam] is the type of data that is passed when calling [run] and
 /// [TResult] denotes the return type of the handler function. To signal that
 /// a handler doesn't take a parameter or returns no value use the type `void`
 abstract class Command<TParam, TResult> extends CustomValueNotifier<TResult> {
@@ -203,7 +212,7 @@ abstract class Command<TParam, TResult> extends CustomValueNotifier<TResult> {
           'Cannot provide both errorFilter and errorFilterFn. Use one or the other.',
         ),
         _restriction = restriction,
-        _ifRestrictedExecuteInstead = ifRestrictedExecuteInstead,
+        _ifRestrictedRunInstead = ifRestrictedExecuteInstead,
         _noReturnValue = noReturnValue,
         _noParamValue = noParamValue,
         _includeLastResultInCommandResults = includeLastResultInCommandResults,
@@ -250,36 +259,36 @@ abstract class Command<TParam, TResult> extends CustomValueNotifier<TResult> {
     });
 
     // /// forward busy states to the `isExecuting` Listenable
-    // _commandResult.listen((x, _) => _isExecuting.value = x.isExecuting);
+    // _commandResult.listen((x, _) => _isRunning.value = x.isExecuting);
 
     /// Merge the external execution restricting with the internal
     /// isExecuting which also blocks execution if true
-    _canExecute = (_restriction == null)
-        ? _isExecuting.map((val) => !val)
+    _canRun = (_restriction == null)
+        ? _isRunning.map((val) => !val)
         : _restriction.combineLatest<bool, bool>(
-            _isExecuting,
+            _isRunning,
             (restriction, isExecuting) => !restriction && !isExecuting,
           );
 
     /// decouple the async isExecuting from the sync isExecuting
-    /// so that _canExecute will update immediately
-    _isExecuting.listen((busy, _) {
-      _isExecutingAsync.value = busy;
+    /// so that _canRun will update immediately
+    _isRunning.listen((busy, _) {
+      _isRunningAsync.value = busy;
     });
   }
 
-  /// Executes the wrapped function with optional [param].
+  /// Runs the wrapped function with optional [param].
   ///
   /// If [restriction] is true (command disabled), execution is skipped and
-  /// [ifRestrictedExecuteInstead] is called instead (if provided).
+  /// [ifRestrictedRunInstead] is called instead (if provided).
   ///
-  /// For async commands, sets [isExecuting] to true, updates [results] during execution,
-  /// and sets [isExecuting] to false when complete. Sync commands execute immediately
-  /// without [isExecuting] updates (accessing [isExecuting] on sync commands throws).
+  /// For async commands, sets [isRunning] to true, updates [results] during execution,
+  /// and sets [isRunning] to false when complete. Sync commands execute immediately
+  /// without [isRunning] updates (accessing [isRunning] on sync commands throws).
   ///
   /// Errors are routed according to [errorFilter] configuration (see [ErrorReaction]).
-  /// Use [executeWithFuture] if you need an awaitable result.
-  void execute([TParam? param]) async {
+  /// Use [runAsync] if you need an awaitable result.
+  void run([TParam? param]) async {
     // its valid to dispose a command anytime, so we have to make sure this
     // doesn't create an invalid state
     if (_isDisposing) {
@@ -290,17 +299,17 @@ abstract class Command<TParam, TResult> extends CustomValueNotifier<TResult> {
     }
 
     if (_restriction?.value == true) {
-      _ifRestrictedExecuteInstead?.call(param);
+      _ifRestrictedRunInstead?.call(param);
       return;
     }
-    if (!_canExecute.value) {
+    if (!_canRun.value) {
       return;
     }
 
-    if (_isExecuting.value) {
+    if (_isRunning.value) {
       return;
     } else {
-      _isExecuting.value = true;
+      _isRunning.value = true;
     }
 
     _errors.value = null; // this will not trigger the listeners
@@ -325,7 +334,7 @@ abstract class Command<TParam, TResult> extends CustomValueNotifier<TResult> {
       TResult result;
 
       /// here we call the actual handler function
-      final FutureOr = _execute(param);
+      final FutureOr = _run(param);
       if (FutureOr is Future) {
         result = await FutureOr;
       } else {
@@ -343,10 +352,10 @@ abstract class Command<TParam, TResult> extends CustomValueNotifier<TResult> {
         false,
       );
 
-      /// make sure set _isExecuting to false before we notify the listeners
+      /// make sure set _isRunning to false before we notify the listeners
       /// in case the listener wants to call another command that is restricted
       /// by this isExecuting flag
-      _isExecuting.value = false;
+      _isRunning.value = false;
       if (!_noReturnValue) {
         value = result;
       } else {
@@ -367,7 +376,7 @@ abstract class Command<TParam, TResult> extends CustomValueNotifier<TResult> {
       _handleErrorFiltered(param, error, chain);
     } finally {
       if (!_isDisposing) {
-        _isExecuting.value = false;
+        _isRunning.value = false;
       }
 
       /// give the async notifications a chance to propagate
@@ -377,6 +386,15 @@ abstract class Command<TParam, TResult> extends CustomValueNotifier<TResult> {
       }
     }
   }
+
+  /// Deprecated: Use [run] instead.
+  /// This method will be removed in v10.0.0.
+  @Deprecated(
+    'Use run() instead. '
+    'This will be removed in v10.0.0. '
+    'See BREAKING_CHANGE_EXECUTE_TO_RUN.md for migration guide.',
+  )
+  void execute([TParam? param]) => run(param);
 
   StackTrace _mandatoryErrorHandling(
     StackTrace stacktrace,
@@ -411,13 +429,13 @@ abstract class Command<TParam, TResult> extends CustomValueNotifier<TResult> {
   }
 
   /// override this method to implement the actual command logic
-  FutureOr<TResult> _execute([TParam? param]);
+  FutureOr<TResult> _run([TParam? param]);
 
-  /// This makes Command a callable class, so instead of `myCommand.execute()`
+  /// This makes Command a callable class, so instead of `myCommand.run()`
   /// you can write `myCommand()`
-  void call([TParam? param]) => execute(param);
+  void call([TParam? param]) => run(param);
 
-  final ExecuteInsteadHandler<TParam>? _ifRestrictedExecuteInstead;
+  final ExecuteInsteadHandler<TParam>? _ifRestrictedRunInstead;
 
   /// emits [CommandResult<TResult>] the combined state of the command, which is
   /// often easier in combination with Flutter's `ValueListenableBuilder`
@@ -425,23 +443,60 @@ abstract class Command<TParam, TResult> extends CustomValueNotifier<TResult> {
   ValueListenable<CommandResult<TParam?, TResult>> get results =>
       _commandResult;
 
-  /// `ValueListenable`  that changes its value on any change of the execution
-  /// state change of the command, to allow the UI to easier update its state
-  /// this property is updated asyncronously
-  ValueListenable<bool> get isExecuting => _isExecutingAsync;
+  /// `ValueListenable<bool>` that tracks whether the command is currently running.
+  ///
+  /// **Use this for UI updates** (ValueListenableBuilder, watch_it, etc.)
+  /// Notifications are delivered asynchronously to avoid triggering rebuilds
+  /// during an ongoing build (which would throw a FlutterError).
+  ///
+  /// For command coordination/restrictions, use [isRunningSync] instead.
+  ValueListenable<bool> get isRunning => _isRunningAsync;
 
-  /// `ValueListenable`  that changes its value on any change of the execution
-  /// like [isExecuting] but synchronous. If you want to use this as a trigger
-  /// or a restriction for another command, you should use this property.
-  ValueListenable<bool> get isExecutingSync => _isExecuting;
+  /// Deprecated: Use [isRunning] instead.
+  /// This property will be removed in v10.0.0.
+  @Deprecated(
+    'Use isRunning instead. '
+    'This will be removed in v10.0.0. '
+    'See BREAKING_CHANGE_EXECUTE_TO_RUN.md for migration guide.',
+  )
+  ValueListenable<bool> get isExecuting => isRunning;
+
+  /// `ValueListenable<bool>` that tracks whether the command is currently running.
+  ///
+  /// **Use this for command restrictions and chaining** - notifications are
+  /// delivered synchronously (immediately) to prevent race conditions.
+  ///
+  /// Example: `restriction: loadCommand.isRunningSync` prevents another
+  /// command from running while `loadCommand` is active.
+  ///
+  /// For UI updates, use [isRunning] instead (async notifications are smoother).
+  ValueListenable<bool> get isRunningSync => _isRunning;
+
+  /// Deprecated: Use [isRunningSync] instead.
+  /// This property will be removed in v10.0.0.
+  @Deprecated(
+    'Use isRunningSync instead. '
+    'This will be removed in v10.0.0. '
+    'See BREAKING_CHANGE_EXECUTE_TO_RUN.md for migration guide.',
+  )
+  ValueListenable<bool> get isExecutingSync => isRunningSync;
 
   /// `ValueListenable<bool>` that changes its value on any change of the current
-  /// executability state of the command. Meaning if the command can be executed or not.
-  /// This will issue `false` while the command executes, but also if the command
+  /// executability state of the command. Meaning if the command can be run or not.
+  /// This will issue `false` while the command runs, but also if the command
   /// receives a `true` from the [restriction] `ValueListenable` that you can pass when
   /// creating the Command.
-  /// its value is `!restriction.value && !isExecuting.value`
-  ValueListenable<bool> get canExecute => _canExecute;
+  /// its value is `!restriction.value && !isRunning.value`
+  ValueListenable<bool> get canRun => _canRun;
+
+  /// Deprecated: Use [canRun] instead.
+  /// This property will be removed in v10.0.0.
+  @Deprecated(
+    'Use canRun instead. '
+    'This will be removed in v10.0.0. '
+    'See BREAKING_CHANGE_EXECUTE_TO_RUN.md for migration guide.',
+  )
+  ValueListenable<bool> get canExecute => canRun;
 
   /// `ValueListenable<CommandError>` that reflects the Error State of the command
   /// if the wrapped function throws an error, its value is set to the error is
@@ -531,14 +586,14 @@ abstract class Command<TParam, TResult> extends CustomValueNotifier<TResult> {
   /// properties we make them private and only publish their `ValueListenable`
   /// interface via getters.
   late CustomValueNotifier<CommandResult<TParam?, TResult>> _commandResult;
-  final CustomValueNotifier<bool> _isExecutingAsync = CustomValueNotifier<bool>(
+  final CustomValueNotifier<bool> _isRunningAsync = CustomValueNotifier<bool>(
     false,
     asyncNotification: true,
   );
-  final CustomValueNotifier<bool> _isExecuting = CustomValueNotifier<bool>(
+  final CustomValueNotifier<bool> _isRunning = CustomValueNotifier<bool>(
     false,
   );
-  late ValueListenable<bool> _canExecute;
+  late ValueListenable<bool> _canRun;
   late final ValueListenable<bool>? _restriction;
   final CustomValueNotifier<CommandError<TParam>?> _errors =
       CustomValueNotifier<CommandError<TParam>?>(
@@ -562,12 +617,12 @@ abstract class Command<TParam, TResult> extends CustomValueNotifier<TResult> {
     /// ValueNotifiers would dispose the command itself, we would get an exception
     Future<void>.delayed(Duration(milliseconds: 50), () {
       _commandResult.dispose();
-      // _canExecute is created by listen_it operators which return disposable ValueListenables
-      if (_canExecute is ChangeNotifier) {
-        (_canExecute as ChangeNotifier).dispose();
+      // _canRun is created by listen_it operators which return disposable ValueListenables
+      if (_canRun is ChangeNotifier) {
+        (_canRun as ChangeNotifier).dispose();
       }
-      _isExecuting.dispose();
-      _isExecutingAsync.dispose();
+      _isRunning.dispose();
+      _isRunningAsync.dispose();
       _errors.dispose();
       if (!(_futureCompleter?.isCompleted ?? true)) {
         _futureCompleter!.complete(null);
@@ -604,28 +659,44 @@ abstract class Command<TParam, TResult> extends CustomValueNotifier<TResult> {
 
   Trace? _traceBeforeExecute;
 
-  /// Executes an async Command and returns a Future that completes as soon as
+  /// Runs an async Command and returns a Future that completes as soon as
   /// the Command completes. This is especially useful if you use a
   /// RefreshIndicator
-  Future<TResult> executeWithFuture([TParam? param]) {
+  Future<TResult> runAsync([TParam? param]) {
     assert(
       this is CommandAsync || this is UndoableCommand,
-      'executeWithFuture can\t be used with synchronous Commands',
+      'runAsync can\t be used with synchronous Commands',
     );
     if (_futureCompleter != null && !_futureCompleter!.isCompleted) {
       return _futureCompleter!.future;
     }
     _futureCompleter = Completer<TResult>();
 
-    execute(param);
+    run(param);
     return _futureCompleter!.future;
   }
+
+  /// Deprecated: Use [runAsync] instead.
+  /// This method will be removed in v10.0.0.
+  @Deprecated(
+    'Use runAsync() instead. '
+    'This will be removed in v10.0.0. '
+    'See BREAKING_CHANGE_EXECUTE_TO_RUN.md for migration guide.',
+  )
+  Future<TResult> executeWithFuture([TParam? param]) => runAsync(param);
 
   /// Returns a the result of one of three builders depending on the current state
   /// of the Command. This function won't trigger a rebuild if the command changes states
   /// so it should be used together with get_it_mixin, provider, flutter_hooks and the like.
   Widget toWidget({
     required Widget Function(TResult lastResult, TParam? param) onResult,
+    Widget Function(TResult lastResult, TParam? param)? whileRunning,
+    @Deprecated(
+      'Use whileRunning instead. '
+      'This will be removed in v10.0.0. '
+      'See BREAKING_CHANGE_EXECUTE_TO_RUN.md for migration guide.',
+    )
+    // ignore: deprecated_member_use_from_same_package
     Widget Function(TResult lastResult, TParam? param)? whileExecuting,
     Widget Function(Object? error, TParam? param)? onError,
   }) {
@@ -636,8 +707,12 @@ abstract class Command<TParam, TResult> extends CustomValueNotifier<TResult> {
           ) ??
           const SizedBox();
     }
-    if (isExecuting.value) {
-      return whileExecuting?.call(value, _commandResult.value.paramData) ??
+    if (isRunning.value) {
+      // ignore: deprecated_member_use_from_same_package
+      return (whileRunning ?? whileExecuting)?.call(
+            value,
+            _commandResult.value.paramData,
+          ) ??
           const SizedBox();
     }
     return onResult(value, _commandResult.value.paramData);
@@ -669,7 +744,7 @@ abstract class Command<TParam, TResult> extends CustomValueNotifier<TResult> {
       case ErrorReaction.none:
         assert(
           _futureCompleter == null,
-          'Command: $_name: ErrorFilter returned [ErrorReaction.none], but this Command is executed with [executeWithFuture] which is '
+          'Command: $_name: ErrorFilter returned [ErrorReaction.none], but this Command is executed with [runAsync] which is '
           'combination that is not allowed, because of the error we don\t have any value to complet the future normally with.',
         );
         pushToResults = false;
@@ -763,7 +838,7 @@ abstract class Command<TParam, TResult> extends CustomValueNotifier<TResult> {
             Frame(:final member) when member!.contains('Zone') => false,
             Frame(:final member) when member!.contains('_rootRun') => false,
             Frame(package: 'command_it', :final member)
-                when member!.contains('_execute') =>
+                when member!.contains('_run') =>
               false,
             _ => true,
           },
@@ -773,7 +848,7 @@ abstract class Command<TParam, TResult> extends CustomValueNotifier<TResult> {
           //   ('stack_trace', _) => false,
           //   (_, final member) when member!.contains('Zone') => false,
           //   (_, final member) when member!.contains('_rootRun') => false,
-          //   ('command_it', final member) when member!.contains('_execute') =>
+          //   ('command_it', final member) when member!.contains('_run') =>
           //     false,
           //   _ => true
           // };
@@ -787,7 +862,7 @@ abstract class Command<TParam, TResult> extends CustomValueNotifier<TResult> {
           //   return false;
           // }
           // if (frame.package == 'command_it' &&
-          //     frame.member!.contains('_execute')) {
+          //     frame.member!.contains('_run')) {
           //   return false;
           // }
           // return true;

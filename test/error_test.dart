@@ -156,7 +156,7 @@ void main() {
             (error, _) => globalHandlerCaught = error.error;
 
         expectLater(
-          () => testCommand.execute(),
+          () => testCommand.run(),
           throwsA(isA<AssertionError>()),
         );
         await Future<void>.delayed(const Duration(seconds: 1));
@@ -180,7 +180,7 @@ void main() {
       Command.globalExceptionHandler =
           (error, _) => globalHandlerCaught = error.error;
 
-      testCommand.execute();
+      testCommand.run();
       await Future<void>.delayed(const Duration(seconds: 1));
 
       expect(localHandlerCaught, null);
@@ -199,7 +199,7 @@ void main() {
       Command.globalExceptionHandler =
           (error, _) => globalHandlerCaught = error.error;
 
-      testCommand.execute();
+      testCommand.run();
       await Future<void>.delayed(const Duration(seconds: 2));
 
       expect(localHandlerCaught, null);
@@ -218,7 +218,7 @@ void main() {
       Command.globalExceptionHandler =
           (error, _) => globalHandlerCaught = error.error;
 
-      testCommand.execute();
+      testCommand.run();
       await Future<void>.delayed(const Duration(seconds: 1));
 
       expect(localHandlerCaught, null);
@@ -241,7 +241,7 @@ void main() {
       Command.globalExceptionHandler =
           (error, _) => globalHandlerCaught = error.error;
 
-      expectLater(() => testCommand.execute(), throwsA(isA<Exception>()));
+      expectLater(() => testCommand.run(), throwsA(isA<Exception>()));
       await Future<void>.delayed(const Duration(seconds: 1));
 
       expect(localHandlerCaught, null);
@@ -263,7 +263,7 @@ void main() {
         globalHandlerCaught = error.error;
       };
 
-      testCommand.execute();
+      testCommand.run();
       await Future<void>.delayed(const Duration(seconds: 1));
 
       expect(localHandlerCaught, null);
@@ -287,7 +287,7 @@ void main() {
         globalHandlerCaught = error.error;
       };
 
-      testCommand.execute();
+      testCommand.run();
       await Future<void>.delayed(const Duration(seconds: 1));
 
       expect(localHandlerCaught, isA<Exception>());
@@ -313,7 +313,7 @@ void main() {
         globalHandlerCaught = error.error;
       };
 
-      testCommand.execute();
+      testCommand.run();
       await Future<void>.delayed(const Duration(seconds: 1));
 
       expect(localHandlerCaught, isA<Exception>());
@@ -336,7 +336,7 @@ void main() {
         globalHandlerCaught = error.error;
       };
 
-      testCommand.execute();
+      testCommand.run();
       await Future<void>.delayed(const Duration(seconds: 1));
 
       expect(localHandlerCaught, null);
@@ -362,7 +362,7 @@ void main() {
         globalHandlerCaught = error.error;
       };
 
-      testCommand.execute();
+      testCommand.run();
       await Future<void>.delayed(const Duration(seconds: 1));
 
       expect(localHandlerCaught, isA<Exception>());
@@ -391,7 +391,7 @@ void main() {
         globalHandlerCaught = error.error;
       };
 
-      testCommand.execute();
+      testCommand.run();
       await Future<void>.delayed(const Duration(seconds: 1));
 
       expect(localHandlerCaught, isA<Exception>());
@@ -411,7 +411,7 @@ void main() {
               ),
         ]),
       );
-      expectLater(() => testCommand.execute(), throwsA(isA<AssertionError>()));
+      expectLater(() => testCommand.run(), throwsA(isA<AssertionError>()));
       await Future<void>.delayed(const Duration(seconds: 1));
 
       expect(localHandlerCaught, null);
@@ -431,7 +431,7 @@ void main() {
               ),
         ]),
       );
-      expectLater(() => testCommand.execute(), throwsA(isA<Exception>()));
+      expectLater(() => testCommand.run(), throwsA(isA<Exception>()));
       await Future<void>.delayed(const Duration(seconds: 1));
 
       expect(localHandlerCaught, null);
@@ -453,7 +453,7 @@ void main() {
       testCommand.errors.listen(
         (error, _) => localHandlerCaught = error?.error,
       );
-      testCommand.execute();
+      testCommand.run();
       await Future<void>.delayed(const Duration(seconds: 1));
 
       expect(localHandlerCaught, isA<Exception>());
@@ -475,7 +475,7 @@ void main() {
       Command.globalExceptionHandler = (error, _) {
         globalHandlerCaught = error.error;
       };
-      testCommand.execute();
+      testCommand.run();
       await Future<void>.delayed(const Duration(seconds: 1));
 
       expect(localHandlerCaught, null);
@@ -500,7 +500,7 @@ void main() {
       Command.globalExceptionHandler = (error, _) {
         globalHandlerCaught = error.error;
       };
-      testCommand.execute();
+      testCommand.run();
       await Future<void>.delayed(const Duration(seconds: 1));
 
       expect(localHandlerCaught, isA<Exception>());
@@ -525,7 +525,7 @@ void main() {
       Command.globalExceptionHandler = (error, _) {
         globalHandlerCaught = error.error;
       };
-      testCommand.execute();
+      testCommand.run();
       await Future<void>.delayed(const Duration(seconds: 1));
 
       expect(localHandlerCaught, isA<Exception>());
@@ -547,7 +547,7 @@ void main() {
       Command.globalExceptionHandler = (error, _) {
         globalHandlerCaught = error.error;
       };
-      expectLater(() => testCommand.execute(), throwsA(isA<Exception>()));
+      expectLater(() => testCommand.run(), throwsA(isA<Exception>()));
       await Future<void>.delayed(const Duration(seconds: 1));
 
       expect(localHandlerCaught, null);
@@ -572,7 +572,7 @@ void main() {
       Command.globalExceptionHandler =
           (error, _) => globalHandlerCaught = error.error;
 
-      expectLater(() => testCommand.execute(), throwsA(isA<Exception>()));
+      expectLater(() => testCommand.run(), throwsA(isA<Exception>()));
       await Future<void>.delayed(const Duration(seconds: 1));
 
       expect(localHandlerCaught, null);
@@ -595,7 +595,7 @@ void main() {
       Command.globalExceptionHandler =
           (error, _) => globalHandlerCaught = error.error;
 
-      expectLater(() => testCommand.execute(), throwsA(isA<Exception>()));
+      expectLater(() => testCommand.run(), throwsA(isA<Exception>()));
       await Future<void>.delayed(const Duration(seconds: 1));
 
       expect(localHandlerCaught, null);
@@ -619,11 +619,29 @@ void main() {
         globalHandlerCaught = error.error;
       };
 
-      testCommand.execute();
+      testCommand.run();
       await Future<void>.delayed(const Duration(seconds: 2));
 
       expect(localHandlerCaught, null);
       expect(globalHandlerCaught, isA<StateError>());
+    });
+
+    test('ErrorHandlerLocalAndGlobal constructor', () {
+      // Test that the constructor works and filter returns correct reaction
+      const filter = ErrorHandlerLocalAndGlobal();
+      final reaction = filter.filter(Exception('test'), StackTrace.current);
+      expect(reaction, ErrorReaction.localAndGlobalHandler);
+    });
+
+    test('TableErrorFilter constructor', () {
+      // Test that the constructor works and filter returns correct reaction
+      const filter = TableErrorFilter({
+        Exception: ErrorReaction.localHandler,
+        StateError: ErrorReaction.globalHandler,
+      });
+      expect(filter, isNotNull);
+      expect(filter.filter(Exception('test'), StackTrace.current),
+          ErrorReaction.localHandler);
     });
   });
 }

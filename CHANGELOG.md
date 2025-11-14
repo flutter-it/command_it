@@ -1,19 +1,62 @@
-[8.1.0]
-### New Feature
+[9.0.0] - 2025-11-14
+
+### Breaking Changes - API Terminology Migration (execute → run)
+
+**This release renames the primary API from "execute" terminology to "run" for better Flutter ecosystem consistency.**
+
+#### API Changes (with deprecation period until v10.0.0):
+
+**Methods:**
+- `execute([TParam? param])` → `run([TParam? param])`
+- `executeWithFuture([TParam? param])` → `runAsync([TParam? param])`
+
+**Properties:**
+- `isExecuting` → `isRunning` (async notifications for UI)
+- `isExecutingSync` → `isRunningSync` (sync notifications for command coordination)
+- `canExecute` → `canRun`
+- `thrownExceptions` → `errors`
+
+**Parameters:**
+- `ifRestrictedExecuteInstead:` → `ifRestrictedRunInstead:` (12 factory methods)
+- `whileExecuting:` → `whileRunning:` (CommandBuilder and toWidget methods)
+
+#### Migration Guide:
+
+**Automated migration:** Run `dart fix --apply` to automatically update most usages via data-driven fixes.
+
+**Manual search/replace patterns:**
+```
+.execute(             → .run(
+.executeWithFuture(   → .runAsync(
+.isExecuting          → .isRunning
+.isExecutingSync      → .isRunningSync
+.canExecute           → .canRun
+.thrownExceptions     → .errors
+ifRestrictedExecuteInstead:  → ifRestrictedRunInstead:
+whileExecuting:       → whileRunning:
+```
+
+**Old API remains functional with deprecation warnings until v10.0.0.**
+
+See [BREAKING_CHANGE_EXECUTE_TO_RUN.md](BREAKING_CHANGE_EXECUTE_TO_RUN.md) for complete migration details.
+
+### New Features (from 8.1.0)
 * Added `errorFilterFn` parameter for function-based error filtering - provides simple inline alternative to object-based `ErrorFilter` system
 * Return `ErrorReaction` directly or `ErrorReaction.defaulErrorFilter` to delegate to default
 * Assertion prevents using both `errorFilter` and `errorFilterFn` simultaneously
 * Available on all 12 command factory methods and MockCommand
 
-### Bug Fixes
+### Bug Fixes (from 8.1.0)
 * Fixed unsafe ValueNotifier type casts in `_canExecute` field - changed to ValueListenable<bool> with safe disposal
 * Fixed parameter order in CommandBuilder.onError callback - now (error, lastData, paramData) for consistency
 * Fixed MockCommand type signature from `Command<TParam, TResult?>` to `Command<TParam, TResult>` to match real Commands
 
 ### Documentation
-* Added comprehensive documentation to execute() method
+* Added comprehensive documentation to run() method (formerly execute())
 * Improved error handling documentation in README with configuration examples
 * Fixed image URLs to use flutter-it organization
+* Updated all examples to use new "run" terminology
+* Added data-driven fixes for automatic migration (fix_data.yaml)
 
 [8.0.2]
 ### Maintenance

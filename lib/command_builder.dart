@@ -15,11 +15,24 @@ class CommandBuilder<TParam, TResult> extends StatelessWidget {
   /// If the command has no return value or returns null, this builder will be called when the
   /// command is executed successfully.
   final Widget Function(BuildContext context, TParam? param)? onNullData;
+
+  final Widget Function(
+    BuildContext context,
+    TResult? lastValue,
+    TParam? param,
+  )? whileRunning;
+
+  @Deprecated(
+    'Use whileRunning instead. '
+    'This will be removed in v10.0.0. '
+    'See BREAKING_CHANGE_EXECUTE_TO_RUN.md for migration guide.',
+  )
   final Widget Function(
     BuildContext context,
     TResult? lastValue,
     TParam? param,
   )? whileExecuting;
+
   final Widget Function(
     BuildContext context,
     Object,
@@ -32,6 +45,12 @@ class CommandBuilder<TParam, TResult> extends StatelessWidget {
     this.onSuccess,
     this.onData,
     this.onNullData,
+    this.whileRunning,
+    @Deprecated(
+      'Use whileRunning instead. '
+      'This will be removed in v10.0.0. '
+      'See BREAKING_CHANGE_EXECUTE_TO_RUN.md for migration guide.',
+    )
     this.whileExecuting,
     this.onError,
     super.key,
@@ -53,9 +72,11 @@ class CommandBuilder<TParam, TResult> extends StatelessWidget {
           onNullData: onNullData != null
               ? (paramData) => onNullData!.call(context, paramData)
               : null,
-          whileExecuting: whileExecuting != null
-              ? (lastData, paramData) =>
-                  whileExecuting!.call(context, lastData, paramData)
+          // ignore: deprecated_member_use_from_same_package
+          whileRunning: (whileRunning ?? whileExecuting) != null
+              // ignore: deprecated_member_use_from_same_package
+              ? (lastData, paramData) => (whileRunning ?? whileExecuting)!
+                  .call(context, lastData, paramData)
               : null,
           onError: (error, lastData, paramData) {
             if (onError == null) {
@@ -80,6 +101,12 @@ extension ToWidgeCommandResult<TParam, TResult>
     Widget Function(TResult result, TParam? param)? onData,
     Widget Function(TParam? param)? onSuccess,
     Widget Function(TParam? param)? onNullData,
+    Widget Function(TResult? lastResult, TParam? param)? whileRunning,
+    @Deprecated(
+      'Use whileRunning instead. '
+      'This will be removed in v10.0.0. '
+      'See BREAKING_CHANGE_EXECUTE_TO_RUN.md for migration guide.',
+    )
     Widget Function(TResult? lastResult, TParam? param)? whileExecuting,
     Widget Function(Object error, TResult? lastResult, TParam? param)? onError,
   }) {
@@ -90,8 +117,9 @@ extension ToWidgeCommandResult<TParam, TResult>
     if (error != null) {
       return onError?.call(error!, data, paramData) ?? const SizedBox();
     }
-    if (isExecuting) {
-      return whileExecuting?.call(data, paramData) ?? const SizedBox();
+    if (isRunning) {
+      return (whileRunning ?? whileExecuting)?.call(data, paramData) ??
+          const SizedBox();
     }
     if (onSuccess != null) {
       return onSuccess.call(paramData);

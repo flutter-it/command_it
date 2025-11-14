@@ -58,7 +58,7 @@ class _HomePageState extends State<HomePage> {
           Expanded(
             // Handle events to show / hide spinner
             child: ValueListenableBuilder<bool>(
-              valueListenable: weatherManager.updateWeatherCommand.isExecuting,
+              valueListenable: weatherManager.updateWeatherCommand.isRunning,
               builder: (BuildContext context, bool isRunning, _) {
                 // if true we show a busy Spinner otherwise the ListView
                 if (isRunning == true) {
@@ -82,13 +82,11 @@ class _HomePageState extends State<HomePage> {
               children: <Widget>[
                 Expanded(
                   child: ValueListenableBuilder<bool>(
-                    valueListenable:
-                        weatherManager.updateWeatherCommand.canExecute,
-                    builder: (BuildContext context, bool canExecute, _) {
-                      // Depending on the value of canExecute we set or clear the Handler
-                      final handler = canExecute
-                          ? weatherManager.updateWeatherCommand
-                          : null;
+                    valueListenable: weatherManager.updateWeatherCommand.canRun,
+                    builder: (BuildContext context, bool canRun, _) {
+                      // Depending on the value of canRun we set or clear the Handler
+                      final handler =
+                          canRun ? weatherManager.updateWeatherCommand : null;
                       return ElevatedButton(
                         child: Text('Update'),
                         style: ElevatedButton.styleFrom(
@@ -97,9 +95,9 @@ class _HomePageState extends State<HomePage> {
                         ),
 
                         /// because of a current limitation of Dart
-                        /// we have to use `?.execute` if the command is
+                        /// we have to use `?.run` if the command is
                         /// stored in a nullable variable like in this case
-                        onPressed: handler?.execute,
+                        onPressed: handler?.run,
                       );
                     },
                   ),

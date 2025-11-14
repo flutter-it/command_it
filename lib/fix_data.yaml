@@ -1,0 +1,251 @@
+# Data-driven fixes for command_it package
+# Enables automatic migration from execute→run terminology
+# Usage: dart fix --apply
+#
+# See: https://github.com/flutter/flutter/blob/master/docs/contributing/Data-driven-Fixes.md
+
+version: 1
+transforms:
+  # ============================================================================
+  # Method Renames
+  # ============================================================================
+
+  - title: 'Rename execute to run'
+    date: 2025-11-13
+    element:
+      uris: ['package:command_it/command_it.dart']
+      method: 'execute'
+      inClass: 'Command'
+    changes:
+      - kind: 'rename'
+        newName: 'run'
+
+  - title: 'Rename executeWithFuture to runAsync'
+    date: 2025-11-13
+    element:
+      uris: ['package:command_it/command_it.dart']
+      method: 'executeWithFuture'
+      inClass: 'Command'
+    changes:
+      - kind: 'rename'
+        newName: 'runAsync'
+
+  # ============================================================================
+  # Property/Getter Renames
+  # ============================================================================
+
+  - title: 'Rename thrownExceptions to errors'
+    date: 2025-11-13
+    element:
+      uris: ['package:command_it/command_it.dart']
+      getter: 'thrownExceptions'
+      inClass: 'Command'
+    changes:
+      - kind: 'rename'
+        newName: 'errors'
+
+  - title: 'Rename isExecuting to isRunning'
+    date: 2025-11-13
+    element:
+      uris: ['package:command_it/command_it.dart']
+      getter: 'isExecuting'
+      inClass: 'Command'
+    changes:
+      - kind: 'rename'
+        newName: 'isRunning'
+
+  - title: 'Rename isExecutingSync to isRunningSync'
+    date: 2025-11-13
+    element:
+      uris: ['package:command_it/command_it.dart']
+      getter: 'isExecutingSync'
+      inClass: 'Command'
+    changes:
+      - kind: 'rename'
+        newName: 'isRunningSync'
+
+  - title: 'Rename canExecute to canRun'
+    date: 2025-11-13
+    element:
+      uris: ['package:command_it/command_it.dart']
+      getter: 'canExecute'
+      inClass: 'Command'
+    changes:
+      - kind: 'rename'
+        newName: 'canRun'
+
+  # ============================================================================
+  # Factory Method Parameter Renames (12 methods)
+  # ============================================================================
+
+  # Sync Commands (4 methods)
+
+  - title: 'Rename parameter ifRestrictedExecuteInstead in createSyncNoParamNoResult'
+    date: 2025-11-13
+    element:
+      uris: ['package:command_it/command_it.dart']
+      method: 'createSyncNoParamNoResult'
+      inClass: 'Command'
+    changes:
+      - kind: 'renameParameter'
+        oldName: 'ifRestrictedExecuteInstead'
+        newName: 'ifRestrictedRunInstead'
+
+  - title: 'Rename parameter ifRestrictedExecuteInstead in createSyncNoResult'
+    date: 2025-11-13
+    element:
+      uris: ['package:command_it/command_it.dart']
+      method: 'createSyncNoResult'
+      inClass: 'Command'
+    changes:
+      - kind: 'renameParameter'
+        oldName: 'ifRestrictedExecuteInstead'
+        newName: 'ifRestrictedRunInstead'
+
+  - title: 'Rename parameter ifRestrictedExecuteInstead in createSyncNoParam'
+    date: 2025-11-13
+    element:
+      uris: ['package:command_it/command_it.dart']
+      method: 'createSyncNoParam'
+      inClass: 'Command'
+    changes:
+      - kind: 'renameParameter'
+        oldName: 'ifRestrictedExecuteInstead'
+        newName: 'ifRestrictedRunInstead'
+
+  - title: 'Rename parameter ifRestrictedExecuteInstead in createSync'
+    date: 2025-11-13
+    element:
+      uris: ['package:command_it/command_it.dart']
+      method: 'createSync'
+      inClass: 'Command'
+    changes:
+      - kind: 'renameParameter'
+        oldName: 'ifRestrictedExecuteInstead'
+        newName: 'ifRestrictedRunInstead'
+
+  # Async Commands (4 methods)
+
+  - title: 'Rename parameter ifRestrictedExecuteInstead in createAsyncNoParamNoResult'
+    date: 2025-11-13
+    element:
+      uris: ['package:command_it/command_it.dart']
+      method: 'createAsyncNoParamNoResult'
+      inClass: 'Command'
+    changes:
+      - kind: 'renameParameter'
+        oldName: 'ifRestrictedExecuteInstead'
+        newName: 'ifRestrictedRunInstead'
+
+  - title: 'Rename parameter ifRestrictedExecuteInstead in createAsyncNoResult'
+    date: 2025-11-13
+    element:
+      uris: ['package:command_it/command_it.dart']
+      method: 'createAsyncNoResult'
+      inClass: 'Command'
+    changes:
+      - kind: 'renameParameter'
+        oldName: 'ifRestrictedExecuteInstead'
+        newName: 'ifRestrictedRunInstead'
+
+  - title: 'Rename parameter ifRestrictedExecuteInstead in createAsyncNoParam'
+    date: 2025-11-13
+    element:
+      uris: ['package:command_it/command_it.dart']
+      method: 'createAsyncNoParam'
+      inClass: 'Command'
+    changes:
+      - kind: 'renameParameter'
+        oldName: 'ifRestrictedExecuteInstead'
+        newName: 'ifRestrictedRunInstead'
+
+  - title: 'Rename parameter ifRestrictedExecuteInstead in createAsync'
+    date: 2025-11-13
+    element:
+      uris: ['package:command_it/command_it.dart']
+      method: 'createAsync'
+      inClass: 'Command'
+    changes:
+      - kind: 'renameParameter'
+        oldName: 'ifRestrictedExecuteInstead'
+        newName: 'ifRestrictedRunInstead'
+
+  # Undoable Commands (4 methods)
+
+  - title: 'Rename parameter ifRestrictedExecuteInstead in createUndoableNoParamNoResult'
+    date: 2025-11-13
+    element:
+      uris: ['package:command_it/command_it.dart']
+      method: 'createUndoableNoParamNoResult'
+      inClass: 'Command'
+    changes:
+      - kind: 'renameParameter'
+        oldName: 'ifRestrictedExecuteInstead'
+        newName: 'ifRestrictedRunInstead'
+
+  - title: 'Rename parameter ifRestrictedExecuteInstead in createUndoableNoResult'
+    date: 2025-11-13
+    element:
+      uris: ['package:command_it/command_it.dart']
+      method: 'createUndoableNoResult'
+      inClass: 'Command'
+    changes:
+      - kind: 'renameParameter'
+        oldName: 'ifRestrictedExecuteInstead'
+        newName: 'ifRestrictedRunInstead'
+
+  - title: 'Rename parameter ifRestrictedExecuteInstead in createUndoableNoParam'
+    date: 2025-11-13
+    element:
+      uris: ['package:command_it/command_it.dart']
+      method: 'createUndoableNoParam'
+      inClass: 'Command'
+    changes:
+      - kind: 'renameParameter'
+        oldName: 'ifRestrictedExecuteInstead'
+        newName: 'ifRestrictedRunInstead'
+
+  - title: 'Rename parameter ifRestrictedExecuteInstead in createUndoable'
+    date: 2025-11-13
+    element:
+      uris: ['package:command_it/command_it.dart']
+      method: 'createUndoable'
+      inClass: 'Command'
+    changes:
+      - kind: 'renameParameter'
+        oldName: 'ifRestrictedExecuteInstead'
+        newName: 'ifRestrictedRunInstead'
+
+  # ============================================================================
+  # CommandResult Field Rename
+  # ============================================================================
+
+  # Note: CommandResult.isExecuting is a positional constructor parameter
+  # and cannot be automatically renamed via data-driven fixes.
+  # Users will need to manually update CommandResult instantiations or use
+  # the deprecated getter that will be provided for backward compatibility.
+
+  - title: 'Rename CommandResult.isExecuting field to isRunning'
+    date: 2025-11-13
+    element:
+      uris: ['package:command_it/command_it.dart']
+      getter: 'isExecuting'
+      inClass: 'CommandResult'
+    changes:
+      - kind: 'rename'
+        newName: 'isRunning'
+
+  # ============================================================================
+  # CommandBuilder Parameter Renames
+  # ============================================================================
+
+  - title: 'Rename parameter whileExecuting to whileRunning in CommandBuilder'
+    date: 2025-11-13
+    element:
+      uris: ['package:command_it/command_it.dart']
+      constructor: ''
+      inClass: 'CommandBuilder'
+    changes:
+      - kind: 'renameParameter'
+        oldName: 'whileExecuting'
+        newName: 'whileRunning'

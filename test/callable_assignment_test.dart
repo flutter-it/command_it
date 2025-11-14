@@ -14,7 +14,7 @@ import 'package:flutter_test/flutter_test.dart';
 /// default, but it's considered a code smell because it's unclear that a
 /// tear-off is happening.
 ///
-/// **Recommended pattern**: Explicitly use `.execute` (method tear-off) or
+/// **Recommended pattern**: Explicitly use `.run` (method tear-off) or
 /// `() => command()` (lambda) to make the intent clear.
 ///
 /// See: https://gist.github.com/escamoteur/e92fc4b2a0aaf4d180f46110543c6706
@@ -35,7 +35,7 @@ void main() {
       // Use explicit patterns below instead:
 
       // ✅ WORKS - Method tear-off
-      VoidCallback methodTearOff = command.execute;
+      VoidCallback methodTearOff = command.run;
       methodTearOff();
       expect(callCount, 1);
 
@@ -44,9 +44,9 @@ void main() {
       lambda();
       expect(callCount, 2);
 
-      // ✅ WORKS - Lambda calling execute
-      VoidCallback lambdaExecute = () => command.execute();
-      lambdaExecute();
+      // ✅ WORKS - Lambda calling run
+      VoidCallback lambdaRun = () => command.run();
+      lambdaRun();
       expect(callCount, 3);
     });
 
@@ -70,7 +70,7 @@ void main() {
 
                 // ✅ WORKS - Method tear-off (RECOMMENDED)
                 FloatingActionButton(
-                  onPressed: command.execute,
+                  onPressed: command.run,
                   child: const Icon(Icons.add),
                 ),
 
@@ -80,10 +80,10 @@ void main() {
                   child: const Text('Press'),
                 ),
 
-                // ✅ WORKS - Lambda calling execute
+                // ✅ WORKS - Lambda calling run
                 ElevatedButton(
-                  onPressed: () => command.execute(),
-                  child: const Text('Execute'),
+                  onPressed: () => command.run(),
+                  child: const Text('Run'),
                 ),
               ],
             ),
@@ -101,7 +101,7 @@ void main() {
       await tester.pump();
       expect(pressCount, 2);
 
-      // Test lambda execute pattern
+      // Test lambda run pattern
       await tester.tap(find.byType(ElevatedButton));
       await tester.pump();
       expect(pressCount, 3);
@@ -128,7 +128,7 @@ void main() {
       // Works at runtime but unclear that call() is being torn off
 
       // ✅ WORKS - Method tear-off
-      processCallback(command.execute);
+      processCallback(command.run);
       expect(callCount, 1);
 
       // ✅ WORKS - Lambda
@@ -153,7 +153,7 @@ void main() {
       // Works at runtime but unclear that call() is being torn off
 
       // ✅ WORKS - Method tear-off
-      processCallback(command.execute);
+      processCallback(command.run);
       expect(callCount, 1);
 
       // ✅ WORKS - Lambda
@@ -167,7 +167,7 @@ void main() {
       final command = Command.createSyncNoParamNoResult(() {});
 
       // This is the cleanest and recommended approach
-      VoidCallback callback = command.execute;
+      VoidCallback callback = command.run;
 
       expect(callback, isA<VoidCallback>());
     });

@@ -22,7 +22,7 @@ class CommandAsync<TParam, TResult> extends Command<TParam, TResult> {
 
   @override
   // ignore: avoid_void_async
-  Future<TResult> _execute([TParam? param]) async {
+  Future<TResult> _run([TParam? param]) async {
     TResult result;
     if (_noParamValue) {
       assert(_funcNoParam != null);

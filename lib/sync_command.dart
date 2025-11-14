@@ -5,8 +5,8 @@ class CommandSync<TParam, TResult> extends Command<TParam, TResult> {
   final TResult Function()? _funcNoParam;
 
   @override
-  ValueListenable<bool> get isExecuting {
-    assert(false, "isExecuting isn't supported by synchronous commands");
+  ValueListenable<bool> get isRunning {
+    assert(false, "isRunning isn't supported by synchronous commands");
     return ValueNotifier<bool>(false);
   }
 
@@ -27,7 +27,7 @@ class CommandSync<TParam, TResult> extends Command<TParam, TResult> {
         _funcNoParam = funcNoParam;
 
   @override
-  TResult _execute([TParam? param]) {
+  TResult _run([TParam? param]) {
     if (_noParamValue) {
       assert(_funcNoParam != null);
       return _funcNoParam!();

@@ -64,7 +64,7 @@ void main() {
   /// given command.
   void setupCollectors(Command command, {bool enablePrint = false}) {
     // Set up the collectors
-    command.canExecute.listen((b, _) {
+    command.canRun.listen((b, _) {
       canExecuteCollector(b);
       if (enablePrint) {
         print('Can Execute $b');
@@ -72,7 +72,7 @@ void main() {
     });
     // Setup is Executing listener only for async commands.
     if (command is CommandAsync) {
-      command.isExecuting.listen((b, _) {
+      command.isRunning.listen((b, _) {
         isExecutingCollector(b);
         if (enablePrint) {
           print('isExecuting $b');
@@ -113,14 +113,14 @@ void main() {
       int executionCount = 0;
       final command = Command.createSyncNoParamNoResult(() => executionCount++);
 
-      expect(command.canExecute.value, true);
+      expect(command.canRun.value, true);
 
       // Setup collectors for the command.
       setupCollectors(command);
 
-      command.execute();
+      command.run();
 
-      expect(command.canExecute.value, true);
+      expect(command.canRun.value, true);
       expect(executionCount, 1);
 
       // Verify the collectors values.
@@ -146,23 +146,23 @@ void main() {
         },
       );
 
-      expect(command.canExecute.value, true);
+      expect(command.canRun.value, true);
 
       // Setup Collectors
       setupCollectors(command);
 
-      command.execute();
+      command.run();
 
       expect(executionCount, 1);
       expect(insteadCalledCount, 0);
 
-      expect(command.canExecute.value, true);
+      expect(command.canRun.value, true);
 
       restriction.value = true;
 
-      expect(command.canExecute.value, false);
+      expect(command.canRun.value, false);
 
-      command.execute();
+      command.run();
 
       expect(executionCount, 1);
       expect(insteadCalledCount, 1);
@@ -189,24 +189,24 @@ void main() {
           },
         );
 
-        expect(command.canExecute.value, true);
+        expect(command.canRun.value, true);
 
         // Setup Collectors
         setupCollectors(command);
 
-        command.execute(42);
+        command.run(42);
         await Future<void>.delayed(const Duration(milliseconds: 100));
 
         expect(executionCount, 1);
         expect(insteadCalledParam, null);
 
-        expect(command.canExecute.value, true);
+        expect(command.canRun.value, true);
 
         restriction.value = true;
 
-        expect(command.canExecute.value, false);
+        expect(command.canRun.value, false);
 
-        command.execute(42);
+        command.run(42);
         await Future<void>.delayed(const Duration(milliseconds: 100));
 
         expect(executionCount, 1);
@@ -221,14 +221,14 @@ void main() {
 
       setupCollectors(command);
 
-      expect(command.canExecute.value, true);
+      expect(command.canRun.value, true);
       expect(command.errors.value, null);
 
-      command.execute();
+      command.run();
       expect(command.results.value.error, isA<CustomException>());
       expect(command.errors.value!.error, isA<CustomException>());
 
-      expect(command.canExecute.value, true);
+      expect(command.canRun.value, true);
 
       // verify Collectors.
       expect(cmdResultCollector.values, [
@@ -256,13 +256,13 @@ void main() {
       // Setup Collectors.
       setupCollectors(command);
 
-      expect(command.canExecute.value, true);
+      expect(command.canRun.value, true);
 
-      command.execute('Parameter');
+      command.run('Parameter');
       expect(command.errors.value, null);
       expect(executionCount, 1);
 
-      expect(command.canExecute.value, true);
+      expect(command.canRun.value, true);
 
       // Verify Collectors
       expect(thrownExceptionCollector.values, isNull);
@@ -277,10 +277,10 @@ void main() {
         return '4711';
       }, initialValue: '');
 
-      expect(command.canExecute.value, true);
+      expect(command.canRun.value, true);
       // Setup Collectors
       setupCollectors(command);
-      command.execute();
+      command.run();
 
       expect(command.value, '4711');
       expect(
@@ -290,7 +290,7 @@ void main() {
       expect(command.errors.value, null);
       expect(executionCount, 1);
 
-      expect(command.canExecute.value, true);
+      expect(command.canRun.value, true);
 
       // verify collectors
       expect(thrownExceptionCollector.values, isNull);
@@ -308,10 +308,10 @@ void main() {
         return s + s;
       }, initialValue: '');
 
-      expect(command.canExecute.value, true);
+      expect(command.canRun.value, true);
       // Setup Collectors
       setupCollectors(command);
-      command.execute('4711');
+      command.run('4711');
       expect(command.value, '47114711');
 
       expect(
@@ -321,7 +321,7 @@ void main() {
       expect(command.errors.value, null);
       expect(executionCount, 1);
 
-      expect(command.canExecute.value, true);
+      expect(command.canRun.value, true);
 
       // verify collectors
       expect(thrownExceptionCollector.values, isNull);
@@ -340,10 +340,10 @@ void main() {
           return s;
         }, initialValue: '');
 
-        expect(command.canExecute.value, true);
+        expect(command.canRun.value, true);
         // Setup Collectors
         setupCollectors(command);
-        command.execute(null);
+        command.run(null);
         expect(command.value, null);
 
         expect(
@@ -354,7 +354,7 @@ void main() {
         expect(command.errors.value, null);
         expect(executionCount, 1);
 
-        expect(command.canExecute.value, true);
+        expect(command.canRun.value, true);
 
         // verify collectors
         expect(thrownExceptionCollector.values, isNull);
@@ -370,10 +370,10 @@ void main() {
         return s;
       }, initialValue: '');
 
-      expect(command.canExecute.value, true);
+      expect(command.canRun.value, true);
       // Setup Collectors
       setupCollectors(command);
-      expect(() => command.execute(null), throwsA(isA<AssertionError>()));
+      expect(() => command.run(null), throwsA(isA<AssertionError>()));
     });
   });
   Future<String> slowAsyncFunction(String? s) async {
@@ -400,19 +400,19 @@ void main() {
 
       // Ensure command is not executing already.
       expect(
-        command.isExecuting.value,
+        command.isRunning.value,
         false,
         reason: 'IsExecuting before true',
       );
 
       // Execute command.
       fakeAsync((async) {
-        command.execute();
+        command.run();
 
         // Waiting till the async function has finished executing.
         async.elapse(const Duration(milliseconds: 10));
 
-        expect(command.isExecuting.value, false);
+        expect(command.isRunning.value, false);
 
         expect(executionCount, 1);
 
@@ -448,7 +448,7 @@ void main() {
     //       reason: 'IsExecuting before true');
 
     //   // Execute command.
-    //   command.execute('Done');
+    //   command.run('Done');
 
     //   // Waiting till the async function has finished executing.
     //   await Future<void>.delayed(Duration(milliseconds: 10));
@@ -483,19 +483,19 @@ void main() {
 
       // Ensure command is not executing already.
       expect(
-        command.isExecuting.value,
+        command.isRunning.value,
         false,
         reason: 'IsExecuting before true',
       );
 
       fakeAsync((async) {
         // Execute command.
-        command.execute();
+        command.run();
 
         // Waiting till the async function has finished executing.
         async.elapse(const Duration(milliseconds: 10));
 
-        expect(command.isExecuting.value, false);
+        expect(command.isRunning.value, false);
 
         expect(executionCount, 1);
 
@@ -527,19 +527,19 @@ void main() {
 
       // Ensure command is not executing already.
       expect(
-        command.isExecuting.value,
+        command.isRunning.value,
         false,
         reason: 'IsExecuting before true',
       );
 
       fakeAsync((async) {
         // Execute command.
-        command.execute('Done');
+        command.run('Done');
 
         // Waiting till the async function has finished executing.
         async.elapse(const Duration(milliseconds: 10));
 
-        expect(command.isExecuting.value, false);
+        expect(command.isRunning.value, false);
 
         expect(executionCount, 1);
 
@@ -569,18 +569,18 @@ void main() {
         setupCollectors(command);
 
         expect(
-          command.isExecuting.value,
+          command.isRunning.value,
           false,
           reason: 'IsExecuting before true',
         );
 
         fakeAsync((async) {
-          command.execute('Done');
+          command.run('Done');
 
           // Waiting till the async function has finished executing.
           async.elapse(const Duration(milliseconds: 10));
 
-          expect(command.isExecuting.value, false);
+          expect(command.isRunning.value, false);
 
           expect(executionCount, 1);
 
@@ -609,19 +609,19 @@ void main() {
       setupCollectors(command);
 
       expect(
-        command.isExecuting.value,
+        command.isRunning.value,
         false,
         reason: 'IsExecuting before true',
       );
 
       expect(command.value, 'Initial Value');
 
-      command.execute('Done');
-      command.execute('Done2'); // should not execute
+      command.run('Done');
+      command.run('Done2'); // should not execute
 
       await Future<void>.delayed(const Duration(milliseconds: 100));
 
-      expect(command.isExecuting.value, false);
+      expect(command.isRunning.value, false);
       expect(executionCount, 1);
 
       // The expectation ensures that first command execution went through and
@@ -643,19 +643,19 @@ void main() {
       setupCollectors(command);
 
       expect(
-        command.isExecuting.value,
+        command.isRunning.value,
         false,
         reason: 'IsExecuting before true',
       );
 
-      command.execute('Done');
+      command.run('Done');
 
       // Reuse the same command after 50 milliseconds and it should work.
       await Future<void>.delayed(const Duration(milliseconds: 50));
-      command.execute('Done2');
+      command.run('Done2');
 
       await Future<void>.delayed(const Duration(milliseconds: 50));
-      expect(command.isExecuting.value, false);
+      expect(command.isRunning.value, false);
       expect(executionCount, 2);
 
       // Verify all the necessary collectors
@@ -704,18 +704,18 @@ void main() {
         setupCollectors(command);
 
         expect(
-          command.isExecuting.value,
+          command.isRunning.value,
           false,
           reason: 'IsExecuting before true',
         );
 
-        command.execute('Done');
+        command.run('Done');
         await Future<void>.delayed(const Duration(milliseconds: 50));
         command('Done2');
 
         await Future<void>.delayed(const Duration(milliseconds: 50));
 
-        expect(command.isExecuting.value, false);
+        expect(command.isRunning.value, false);
         expect(executionCount, 2);
 
         // Verify all the necessary collectors
@@ -767,17 +767,17 @@ void main() {
 
         setupCollectors(command);
 
-        expect(command.canExecute.value, true);
-        expect(command.isExecuting.value, false);
+        expect(command.canRun.value, true);
+        expect(command.isRunning.value, false);
 
         expect(command.errors.value, isNull);
         fakeAsync((async) {
-          command.execute('Done');
+          command.run('Done');
 
           async.elapse(Duration.zero);
 
-          expect(command.canExecute.value, true);
-          expect(command.isExecuting.value, false);
+          expect(command.canRun.value, true);
+          expect(command.isRunning.value, false);
 
           // Verify nothing came through pure results from .
           expect(pureResultCollector.values, isNull);
@@ -880,7 +880,7 @@ void main() {
       }, initialValue: 'Initial Value');
 
       final Stopwatch sw = Stopwatch()..start();
-      final commandFuture = command.executeWithFuture('Done');
+      final commandFuture = command.runAsync('Done');
       final result = await commandFuture.timeout(
         const Duration(milliseconds: 50),
       );
@@ -992,23 +992,23 @@ void main() {
         }, initialValue: 'Initial Value');
         setupCollectors(commandForNotificationTest);
         expect(
-          commandForNotificationTest.isExecuting.value,
+          commandForNotificationTest.isRunning.value,
           false,
           reason: 'IsExecuting before true',
         );
 
         fakeAsync((async) {
           // First execution
-          commandForNotificationTest.execute('Done');
+          commandForNotificationTest.run('Done');
           async.elapse(const Duration(milliseconds: 10));
-          expect(commandForNotificationTest.isExecuting.value, false);
+          expect(commandForNotificationTest.isRunning.value, false);
           expect(executionCount, 1);
 
           // async.elapse(const Duration(milliseconds: 10));
           // Second execution
-          commandForNotificationTest.execute('Done');
+          commandForNotificationTest.run('Done');
           async.elapse(const Duration(milliseconds: 10));
-          expect(commandForNotificationTest.isExecuting.value, false);
+          expect(commandForNotificationTest.isRunning.value, false);
           expect(executionCount, 2);
 
           // Expected to return false, true, false
@@ -1038,21 +1038,21 @@ void main() {
       }, initialValue: 'Initial Value');
       setupCollectors(commandForNotificationTest);
       expect(
-        commandForNotificationTest.isExecuting.value,
+        commandForNotificationTest.isRunning.value,
         false,
         reason: 'IsExecuting before true',
       );
       fakeAsync((async) {
         // First execution
-        commandForNotificationTest.execute('Done');
+        commandForNotificationTest.run('Done');
         async.elapse(const Duration(milliseconds: 10));
-        expect(commandForNotificationTest.isExecuting.value, false);
+        expect(commandForNotificationTest.isRunning.value, false);
         expect(executionCount, 1);
 
         // Second execution
-        commandForNotificationTest.execute('Done2');
+        commandForNotificationTest.run('Done2');
         async.elapse(const Duration(milliseconds: 10));
-        expect(commandForNotificationTest.isExecuting.value, false);
+        expect(commandForNotificationTest.isRunning.value, false);
         expect(executionCount, 2);
 
         // Expected to return false, true, false
@@ -1085,22 +1085,22 @@ void main() {
       );
       setupCollectors(commandForNotificationTest);
       expect(
-        commandForNotificationTest.isExecuting.value,
+        commandForNotificationTest.isRunning.value,
         false,
         reason: 'IsExecuting before true',
       );
 
       fakeAsync((async) {
         // First execution
-        commandForNotificationTest.execute('Done');
+        commandForNotificationTest.run('Done');
         async.elapse(const Duration(milliseconds: 10));
-        expect(commandForNotificationTest.isExecuting.value, false);
+        expect(commandForNotificationTest.isRunning.value, false);
         expect(executionCount, 1);
 
         // Second execution
-        commandForNotificationTest.execute('Done');
+        commandForNotificationTest.run('Done');
         async.elapse(const Duration(milliseconds: 10));
-        expect(commandForNotificationTest.isExecuting.value, false);
+        expect(commandForNotificationTest.isRunning.value, false);
         expect(executionCount, 2);
 
         // Expected to return false, true, false
@@ -1134,22 +1134,22 @@ void main() {
       );
       setupCollectors(commandForNotificationTest);
       expect(
-        commandForNotificationTest.isExecuting.value,
+        commandForNotificationTest.isRunning.value,
         false,
         reason: 'IsExecuting before true',
       );
 
       fakeAsync((async) {
         // First execution
-        commandForNotificationTest.execute('Done');
+        commandForNotificationTest.run('Done');
         async.elapse(const Duration(milliseconds: 10));
-        expect(commandForNotificationTest.isExecuting.value, false);
+        expect(commandForNotificationTest.isRunning.value, false);
         expect(executionCount, 1);
 
         // Second execution
-        commandForNotificationTest.execute('Done');
+        commandForNotificationTest.run('Done');
         async.elapse(const Duration(milliseconds: 10));
-        expect(commandForNotificationTest.isExecuting.value, false);
+        expect(commandForNotificationTest.isRunning.value, false);
         expect(executionCount, 2);
 
         // Expected to return false, true, false
@@ -1186,7 +1186,7 @@ void main() {
                 onData: (context, value, _) {
                   return Text(value);
                 },
-                whileExecuting: (_, __, ___) {
+                whileRunning: (_, __, ___) {
                   return const Text('Is Executing');
                 },
               ),
@@ -1225,7 +1225,7 @@ void main() {
                 onData: (context, value, _) {
                   return Text(value);
                 },
-                whileExecuting: (_, __, ___) {
+                whileRunning: (_, __, ___) {
                   return const Text('Is Executing');
                 },
                 onError: (_, error, __, ___) {
@@ -1271,7 +1271,7 @@ void main() {
                     onResult: (value, _) {
                       return Text(value);
                     },
-                    whileExecuting: (_, __) {
+                    whileRunning: (_, __) {
                       return const Text('Is Executing');
                     },
                     onError: (error, __) {
@@ -1320,7 +1320,7 @@ void main() {
                     onResult: (value, _) {
                       return Text(value);
                     },
-                    whileExecuting: (_, __) {
+                    whileRunning: (_, __) {
                       return const Text('Is Executing');
                     },
                     onError: (error, __) {
@@ -1370,7 +1370,7 @@ void main() {
         ),
       );
 
-      testCommand.execute();
+      testCommand.run();
       await tester.pump(const Duration(milliseconds: 200));
 
       expect(find.text('Success!'), findsOneWidget);
@@ -1404,19 +1404,19 @@ void main() {
 
         // Ensure command is not executing already.
         expect(
-          command.isExecuting.value,
+          command.isRunning.value,
           false,
           reason: 'IsExecuting before true',
         );
 
         // Execute command.
         fakeAsync((async) {
-          command.execute();
+          command.run();
 
           // Waiting till the async function has finished executing.
           async.elapse(const Duration(milliseconds: 100));
 
-          expect(command.isExecuting.value, false);
+          expect(command.isRunning.value, false);
 
           expect(executionCount, 1);
 
@@ -1465,7 +1465,7 @@ void main() {
       );
       expect(
         const CommandResult<String, String>.data('param', 'result').toString(),
-        'ParamData param - Data: result - HasError: false - IsExecuting: false',
+        'ParamData param - Data: result - HasError: false - IsRunning: false',
       );
       expect(
         CommandError<String>(
@@ -1494,23 +1494,55 @@ void main() {
       expect(successResult.hasData, true);
       expect(loadingResult.hasData, false);
 
-      // Test hashCode
-      const result1 = CommandResult<void, String>.data(null, 'data');
-      const result2 = CommandResult<void, String>.data(null, 'data');
+      // Test hashCode and equality with non-const instances
+      // Create separate instances (not const canonicalized) with equal values
+      final result1 = CommandResult<void, String>.data(null, 'test' + 'data');
+      final result2 = CommandResult<void, String>.data(null, 'testdata');
+
+      // Verify they are different objects
+      expect(identical(result1, result2), false);
+
+      // But should be equal and have same hashCode
+      expect(result1 == result2, true);
       expect(result1.hashCode, result2.hashCode);
 
-      // Test equality operator
-      expect(result1 == result2, true);
+      // Test inequality with different values
       expect(result1 == loadingResult, false);
+
+      // Test equality with all fields (paramData, data, error, isRunning)
+      final error1 = Exception('test');
+      final resultWithError1 = CommandResult<String, int>(
+        'param',
+        42,
+        error1,
+        false,
+      );
+      final resultWithError2 = CommandResult<String, int>(
+        'param',
+        42,
+        error1, // Same error instance
+        false,
+      );
+      expect(resultWithError1, resultWithError2);
+      expect(resultWithError1.hashCode, resultWithError2.hashCode);
+
+      // Different error should not be equal
+      final resultWithError3 = CommandResult<String, int>(
+        'param',
+        42,
+        Exception('different'),
+        false,
+      );
+      expect(resultWithError1 == resultWithError3, false);
 
       // Test isLoading with no parameter
       const loadingNoParam = CommandResult<String?, String>.isLoading();
-      expect(loadingNoParam.isExecuting, true);
+      expect(loadingNoParam.isRunning, true);
       expect(loadingNoParam.paramData, null);
 
       // Test CommandResult.blank()
       const blankResult = CommandResult<String?, String>.blank();
-      expect(blankResult.isExecuting, false);
+      expect(blankResult.isRunning, false);
       expect(blankResult.hasError, false);
       expect(blankResult.data, null);
       expect(blankResult.paramData, null);
@@ -1594,13 +1626,13 @@ void main() {
         name: 'MockingJay',
       );
       // Ensure mock command is executable.
-      expect(mockCommand.canExecute.value, true);
+      expect(mockCommand.canRun.value, true);
       setupCollectors(mockCommand);
 
       mockCommand.queueResultsForNextExecuteCall([
         const CommandResult<void, String>.data(null, 'param'),
       ]);
-      mockCommand.execute();
+      mockCommand.run();
 
       // verify collectors
       expect(pureResultCollector.values, ['param']);
@@ -1612,7 +1644,7 @@ void main() {
         name: 'MockingJay',
       );
       // Ensure mock command is executable.
-      expect(mockCommand.canExecute.value, true);
+      expect(mockCommand.canRun.value, true);
       setupCollectors(mockCommand);
 
       mockCommand.startExecution('Start');
@@ -1632,7 +1664,7 @@ void main() {
         name: 'MockingJay',
       );
       // Ensure mock command is executable.
-      expect(mockCommand.canExecute.value, true);
+      expect(mockCommand.canRun.value, true);
       setupCollectors(mockCommand);
 
       mockCommand.endExecutionWithData('end_data');
@@ -1661,7 +1693,7 @@ void main() {
         name: 'MockingJay',
       );
       // Ensure mock command is executable.
-      expect(mockCommand.canExecute.value, true);
+      expect(mockCommand.canRun.value, true);
       setupCollectors(mockCommand);
 
       mockCommand.endExecutionNoData();
@@ -1680,7 +1712,7 @@ void main() {
         name: 'MockingJay',
       );
       // Ensure mock command is executable.
-      expect(mockCommand.canExecute.value, true);
+      expect(mockCommand.canRun.value, true);
       setupCollectors(mockCommand);
 
       mockCommand.endExecutionWithError('Test Mock Error');
@@ -1704,7 +1736,7 @@ void main() {
         },
       );
 
-      mockCommand.execute('test');
+      mockCommand.run('test');
 
       expect(restrictedCallbackCalled, true);
       expect(mockCommand.executionCount, 0); // Should not have executed
@@ -1727,7 +1759,7 @@ void main() {
         ),
       ]);
 
-      mockCommand.execute();
+      mockCommand.run();
 
       // Should include last result when error occurs
       expect(mockCommand.results.value.data, 'last value');
@@ -1744,7 +1776,7 @@ void main() {
       int notifyCount = 0;
       mockCommand.listen((_, __) => notifyCount++);
 
-      mockCommand.execute();
+      mockCommand.run();
 
       expect(notifyCount, greaterThan(0));
 
@@ -1757,7 +1789,7 @@ void main() {
       );
 
       // Execute without queueing values should print message
-      mockCommand.execute();
+      mockCommand.run();
 
       expect(mockCommand.executionCount, 1);
 
@@ -1801,10 +1833,10 @@ void main() {
         const CommandResult<String, String>('Param', 'Result', null, false),
       ]);
       // Ensure mock command is executable.
-      expect(mockCommand.canExecute.value, true);
+      expect(mockCommand.canRun.value, true);
       setupCollectors(mockCommand);
 
-      mockCommand.execute();
+      mockCommand.run();
 
       // verify collectors
       expect(cmdResultCollector.values, [
@@ -1826,8 +1858,8 @@ void main() {
         initialValue: '',
       );
 
-      final future1 = command.executeWithFuture();
-      final future2 = command.executeWithFuture(); // Should return same future
+      final future1 = command.runAsync();
+      final future2 = command.runAsync(); // Should return same future
 
       expect(identical(future1, future2), true);
 
@@ -1845,7 +1877,7 @@ void main() {
         initialValue: null,
       );
 
-      final future = command.executeWithFuture();
+      final future = command.runAsync();
 
       // Dispose before execution completes
       await Future<void>.delayed(const Duration(milliseconds: 50));
@@ -1870,6 +1902,7 @@ void main() {
 
     test('reportAllExceptions forces all errors to global handler', () async {
       Object? globalHandlerCaught;
+      // ignore: unused_local_variable
       Object? localHandlerCaught;
 
       Command.reportAllExceptions = true;
@@ -1888,7 +1921,7 @@ void main() {
         if (err != null) localHandlerCaught = err.error;
       });
 
-      command.execute();
+      command.run();
       await Future<void>.delayed(const Duration(milliseconds: 100));
 
       // With reportAllExceptions=true, should call global handler even with local filter
@@ -1906,14 +1939,14 @@ void main() {
         initialValue: '',
       );
 
-      expect(command.isExecutingSync.value, false);
+      expect(command.isRunningSync.value, false);
 
-      command.execute();
+      command.run();
       // isExecutingSync should be true immediately
-      expect(command.isExecutingSync.value, true);
+      expect(command.isRunningSync.value, true);
 
       await Future<void>.delayed(const Duration(milliseconds: 100));
-      expect(command.isExecutingSync.value, false);
+      expect(command.isRunningSync.value, false);
 
       command.dispose();
     });
@@ -1927,11 +1960,11 @@ void main() {
 
       Object? caughtError;
       // ignore: deprecated_member_use
-      command.thrownExceptions.listen((err, _) {
+      command.errors.listen((err, _) {
         if (err != null) caughtError = err.error;
       });
 
-      command.execute();
+      command.run();
       await Future<void>.delayed(const Duration(milliseconds: 100));
 
       expect(caughtError, isA<Exception>());
@@ -1951,7 +1984,7 @@ void main() {
         if (err != null) caughtError = err.error;
       });
 
-      command.execute();
+      command.run();
       await Future<void>.delayed(const Duration(milliseconds: 100));
 
       expect(caughtError, isA<Exception>());
@@ -1970,7 +2003,7 @@ void main() {
       command.errors.listen((err, _) => errorCollector.add(err));
 
       // Trigger error
-      command.execute();
+      command.run();
       await Future<void>.delayed(const Duration(milliseconds: 100));
 
       expect(errorCollector.last?.error, isA<Exception>());
@@ -1993,7 +2026,7 @@ void main() {
       });
 
       expect(
-        () => command.isExecuting,
+        () => command.isRunning,
         throwsA(isA<AssertionError>()),
       );
 
@@ -2008,7 +2041,7 @@ void main() {
 
       // This should trigger the null assertion with message about null value
       expect(
-        () => command.execute(null),
+        () => command.run(null),
         throwsA(isA<AssertionError>()),
       );
 
@@ -2029,7 +2062,7 @@ void main() {
       setupCollectors(command);
 
       // Execute
-      command.execute();
+      command.run();
 
       // Should complete immediately
       expect(executionCount, 1);
@@ -2065,7 +2098,7 @@ void main() {
 
       setupCollectors(command);
 
-      command.execute();
+      command.run();
       await Future<void>.delayed(const Duration(milliseconds: 50));
 
       expect(executionCount, 1);
@@ -2092,7 +2125,7 @@ void main() {
         if (err != null) capturedError = err.error;
       });
 
-      command.execute();
+      command.run();
       await Future<void>.delayed(const Duration(milliseconds: 50));
 
       expect(capturedError, isA<CustomException>());
@@ -2116,7 +2149,7 @@ void main() {
 
       setupCollectors(command);
 
-      command.execute('test1');
+      command.run('test1');
       await Future<void>.delayed(const Duration(milliseconds: 50));
 
       expect(capturedParams, ['test1']);
@@ -2147,7 +2180,7 @@ void main() {
         }
       });
 
-      command.execute('error-test');
+      command.run('error-test');
       await Future<void>.delayed(const Duration(milliseconds: 50));
 
       expect(capturedError, isA<CustomException>());
@@ -2172,7 +2205,7 @@ void main() {
 
       setupCollectors(command);
 
-      command.execute();
+      command.run();
       await Future<void>.delayed(const Duration(milliseconds: 50));
 
       expect(command.value, 'no-chain-capture');
@@ -2197,7 +2230,7 @@ void main() {
         if (err != null) errorHandlerCalls++;
       });
 
-      command.execute();
+      command.run();
       await Future<void>.delayed(const Duration(milliseconds: 50));
 
       expect(command.value, 'completed');

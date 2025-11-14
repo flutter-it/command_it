@@ -29,8 +29,8 @@ class UndoException implements Exception {
 ///  should be undone.
 ///
 /// The function is called with the reason why the command was undone and
-/// a stack that was passed before to the command's `execute` method,
-/// by that the commands `execute` method can store state that is needed to undo
+/// a stack that was passed before to the command's `run` method,
+/// by that the commands `run` method can store state that is needed to undo
 /// its last execution.
 ///
 /// If [reason] is not `null`, the command is being undone because of an Execption in the
@@ -84,7 +84,7 @@ class UndoableCommand<TParam, TResult, TUndoState>
     try {
       TResult result;
       if (!_isDisposing) {
-        _isExecuting.value = true;
+        _isRunning.value = true;
       }
       if (Command.useChainCapture) {
         final completer = Completer<TResult>();
@@ -128,7 +128,7 @@ class UndoableCommand<TParam, TResult, TUndoState>
       _handleErrorFiltered(null, UndoException(error), chain);
     } finally {
       if (!_isDisposing) {
-        _isExecuting.value = false;
+        _isRunning.value = false;
       }
       if (_name != null) {
         Command.loggingHandler?.call('undo + $_name', _commandResult.value);

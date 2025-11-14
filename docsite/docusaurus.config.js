@@ -25,7 +25,7 @@ module.exports = {
           position: 'left',
         },        
         {
-          href: 'https://github.com/escamoteur/command_it',
+          href: 'https://github.com/flutter-it/command_it',
           label: 'GitHub',
           position: 'right',
         },
@@ -73,7 +73,7 @@ module.exports = {
             },           
             {
               label: 'GitHub',
-              href: 'https://github.com/escamoteur/command_it',
+              href: 'https://github.com/flutter-it/command_it',
             },
           ],
         },
@@ -91,7 +91,7 @@ module.exports = {
           sidebarPath: require.resolve('./sidebars.js'),
           // Please change this to your repo.
           editUrl:
-            'https://github.com/escamoteur/command_it',
+            'https://github.com/flutter-it/command_it',
         },        
         theme: {
           customCss: require.resolve('./src/css/custom.css'),

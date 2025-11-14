@@ -209,14 +209,14 @@ void setupCollectors(Command command) {
 
 // In test:
 setupCollectors(command);
-command.execute();
+command.run();
 expect(canExecuteCollector.values, [true, false, true]);
 ```
 
 ### Async Test Utilities
 
 - Use `fake_async` package for controlling time in tests
-- Commands support `executeWithFuture()` for testing with `await`
+- Commands support `runAsync()` for testing with `await`
 - Test both positive and error paths for each command type
 
 ### Running Individual Tests
@@ -257,7 +257,7 @@ test/
 // Text field changes with debounce
 final textChangedCommand = Command.createSync<String, String>((s) => s, '');
 textChangedCommand.debounce(Duration(milliseconds: 500)).listen((text, _) {
-  fetchDataCommand.execute(text);
+  fetchDataCommand.run(text);
 });
 ```
 
@@ -285,7 +285,7 @@ final cmd = Command.createAsync<String, List<Item>>(
 
 ```dart
 RefreshIndicator(
-  onRefresh: () => updateCommand.executeWithFuture(), // Returns Future<T>
+  onRefresh: () => updateCommand.runAsync(), // Returns Future<T>
   child: ListView(...),
 )
 ```
@@ -337,6 +337,6 @@ RefreshIndicator(
 
 1. **Forgetting initialValue**: Commands with return values require `initialValue` parameter
 2. **Wrong restriction value**: `true` = disabled, `false` = enabled (counterintuitive!)
-3. **Awaiting sync commands**: Don't use `executeWithFuture()` with sync commands - will assert
+3. **Awaiting sync commands**: Don't use `runAsync()` with sync commands - will assert
 4. **Not disposing**: Commands must be disposed to prevent memory leaks
 5. **ErrorFilter confusion**: Custom filters must not return `ErrorReaction.defaulErrorFilter`

@@ -39,13 +39,13 @@ class WeatherManager {
     ) {
       // I could omit he execute because Command is a callable
       // class  but here it makes the intention clearer
-      updateWeatherCommand.execute(filterText);
+      updateWeatherCommand.run(filterText);
     });
 
     updateWeatherCommand.errors.listen((ex, _) => print(ex.toString()));
 
     // Update data on start-up
-    updateWeatherCommand.execute();
+    updateWeatherCommand.run();
   }
 
   // Async function that queries the REST API and converts the result into the form our ListViewBuilder can consume

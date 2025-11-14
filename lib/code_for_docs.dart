@@ -16,10 +16,10 @@
 //   final TParam paramData;
 //   final TResult data;
 //   final dynamic error;
-//   final bool isExecuting;
+//   final bool isRunning;
 
 //   // ignore: avoid_positional_boolean_parameters
-//   const CommandResult(this.paramData, this.data, this.error, this.isExecuting);
+//   const CommandResult(this.paramData, this.data, this.error, this.isRunning);
 // }
 
 // class CommandError<TParam> {
@@ -43,18 +43,18 @@
 //   /// Calls the wrapped handler function with an option input parameter
 //   void execute([TParam param]);
 
-//   /// This makes Command a callable class, so instead of `myCommand.execute()` you can write `myCommand()`
+//   /// This makes Command a callable class, so instead of `myCommand.run()` you can write `myCommand()`
 //   void call([TParam param]) => execute(param);
 
 //   ValueListenable<CommandResult<TParam, TResult>> get results => _commandResult;
 
-//   ValueListenable<bool> get isExecuting => _isExecuting;
+//   ValueListenable<bool> get isRunning => _isRunning;
 
 //   ValueListenable<bool> get canExecute => _canExecute;
 
 //   ValueListenable<CommandError> get thrownExceptions => _thrownExceptions;
 
-//   final ValueNotifier<bool> _isExecuting = ValueNotifier<bool>(false);
+//   final ValueNotifier<bool> _isRunning = ValueNotifier<bool>(false);
 //   ValueNotifier<bool> _canExecute;
 //   final ValueNotifier<CommandError<TParam>> _thrownExceptions =
 //       ValueNotifier<CommandError<TParam>>(null);
@@ -115,18 +115,18 @@
 //   /// Calls the wrapped handler function with an option input parameter
 //   void execute([TParam param]);
 
-//   /// This makes RxCommand a callable class, so instead of `myCommand.execute()` you can write `myCommand()`
+//   /// This makes RxCommand a callable class, so instead of `myCommand.run()` you can write `myCommand()`
 //   void call([TParam param]) => execute(param);
 
 //   ValueListenable<CommandResult<TParam, TResult>> get results => _commandResult;
 
-//   ValueListenable<bool> get isExecuting => _isExecuting;
+//   ValueListenable<bool> get isRunning => _isRunning;
 
 //   ValueListenable<bool> get canExecute => _canExecute;
 
 //   ValueListenable<CommandError> get thrownExceptions => _thrownExceptions;
 
-//   final ValueNotifier<bool> _isExecuting = ValueNotifier<bool>(false);
+//   final ValueNotifier<bool> _isRunning = ValueNotifier<bool>(false);
 //   ValueNotifier<bool> _canExecute;
 //   final ValueNotifier<CommandError<TParam>> _thrownExceptions =
 //       ValueNotifier<CommandError<TParam>>(null);
