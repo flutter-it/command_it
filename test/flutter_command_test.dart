@@ -141,7 +141,7 @@ void main() {
       final command = Command.createSyncNoParamNoResult(
         () => executionCount++,
         restriction: restriction,
-        ifRestrictedExecuteInstead: () {
+        ifRestrictedRunInstead: () {
           insteadCalledCount++;
         },
       );
@@ -184,7 +184,7 @@ void main() {
             executionCount++;
           },
           restriction: restriction,
-          ifRestrictedExecuteInstead: (param) {
+          ifRestrictedRunInstead: (param) {
             insteadCalledParam = param;
           },
         );
@@ -1731,7 +1731,7 @@ void main() {
       final mockCommand = MockCommand<String, String>(
         initialValue: 'Initial',
         restriction: ValueNotifier<bool>(true), // Restricted
-        ifRestrictedExecuteInstead: (param) {
+        ifRestrictedRunInstead: (param) {
           restrictedCallbackCalled = true;
         },
       );

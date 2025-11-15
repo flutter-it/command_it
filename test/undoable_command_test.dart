@@ -398,7 +398,7 @@ void main() {
       command.dispose();
     });
 
-    test('ifRestrictedExecuteInstead callback', () async {
+    test('ifRestrictedRunInstead callback', () async {
       final restriction = ValueNotifier<bool>(true);
       int normalExecutions = 0;
       int alternateExecutions = 0;
@@ -412,7 +412,7 @@ void main() {
           stack.pop();
         },
         restriction: restriction,
-        ifRestrictedExecuteInstead: (param) {
+        ifRestrictedRunInstead: (param) {
           alternateExecutions++;
         },
       );

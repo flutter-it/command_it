@@ -1,6 +1,6 @@
 name: command_it
 description: command_it is a way to manage your state based on `ValueListenable` and the `Command` design pattern. It is a rebranding of flutter_command.
-version: 9.0.1
+version: 9.0.2
 homepage: https://github.com/flutter-it/command_it
 
 screenshots:

@@ -1,4 +1,4 @@
-// ignore_for_file: avoid_positional_boolean_parameters
+// ignore_for_file: avoid_positional_boolean_parameters, deprecated_member_use_from_same_package
 library command_it;
 
 import 'dart:async';
@@ -156,7 +156,15 @@ class CommandError<TParam> {
   }
 }
 
-typedef ExecuteInsteadHandler<TParam> = void Function(TParam?);
+typedef RunInsteadHandler<TParam> = void Function(TParam?);
+
+/// Deprecated: Use [RunInsteadHandler] instead.
+@Deprecated(
+  'Use RunInsteadHandler instead. '
+  'This will be removed in v10.0.0. '
+  'See BREAKING_CHANGE_EXECUTE_TO_RUN.md for migration guide.',
+)
+typedef ExecuteInsteadHandler<TParam> = RunInsteadHandler<TParam>;
 
 /// Function-based error filter for simple inline error handling logic.
 ///
@@ -199,6 +207,12 @@ abstract class Command<TParam, TResult> extends CustomValueNotifier<TResult> {
   Command({
     required TResult initialValue,
     required ValueListenable<bool>? restriction,
+    required RunInsteadHandler<TParam>? ifRestrictedRunInstead,
+    @Deprecated(
+      'Use ifRestrictedRunInstead instead. '
+      'This will be removed in v10.0.0. '
+      'See BREAKING_CHANGE_EXECUTE_TO_RUN.md for migration guide.',
+    )
     required ExecuteInsteadHandler<TParam>? ifRestrictedExecuteInstead,
     required bool includeLastResultInCommandResults,
     required bool noReturnValue,
@@ -211,8 +225,14 @@ abstract class Command<TParam, TResult> extends CustomValueNotifier<TResult> {
           !(errorFilter != null && errorFilterFn != null),
           'Cannot provide both errorFilter and errorFilterFn. Use one or the other.',
         ),
+        assert(
+          !(ifRestrictedRunInstead != null &&
+              ifRestrictedExecuteInstead != null),
+          'Cannot provide both ifRestrictedRunInstead and ifRestrictedExecuteInstead. Use ifRestrictedRunInstead.',
+        ),
         _restriction = restriction,
-        _ifRestrictedRunInstead = ifRestrictedExecuteInstead,
+        _ifRestrictedRunInstead =
+            ifRestrictedRunInstead ?? ifRestrictedExecuteInstead,
         _noReturnValue = noReturnValue,
         _noParamValue = noParamValue,
         _includeLastResultInCommandResults = includeLastResultInCommandResults,
@@ -409,7 +429,6 @@ abstract class Command<TParam, TResult> extends CustomValueNotifier<TResult> {
       Error.throwWithStackTrace(error, chain);
     }
 
-    // ignore: deprecated_member_use_from_same_package
     if (kDebugMode && Command.debugErrorsThrowAlways) {
       Error.throwWithStackTrace(error, chain);
     }
@@ -435,7 +454,7 @@ abstract class Command<TParam, TResult> extends CustomValueNotifier<TResult> {
   /// you can write `myCommand()`
   void call([TParam? param]) => run(param);
 
-  final ExecuteInsteadHandler<TParam>? _ifRestrictedRunInstead;
+  final RunInsteadHandler<TParam>? _ifRestrictedRunInstead;
 
   /// emits [CommandResult<TResult>] the combined state of the command, which is
   /// often easier in combination with Flutter's `ValueListenableBuilder`
@@ -696,7 +715,6 @@ abstract class Command<TParam, TResult> extends CustomValueNotifier<TResult> {
       'This will be removed in v10.0.0. '
       'See BREAKING_CHANGE_EXECUTE_TO_RUN.md for migration guide.',
     )
-    // ignore: deprecated_member_use_from_same_package
     Widget Function(TResult lastResult, TParam? param)? whileExecuting,
     Widget Function(Object? error, TParam? param)? onError,
   }) {
@@ -708,7 +726,6 @@ abstract class Command<TParam, TResult> extends CustomValueNotifier<TResult> {
           const SizedBox();
     }
     if (isRunning.value) {
-      // ignore: deprecated_member_use_from_same_package
       return (whileRunning ?? whileExecuting)?.call(
             value,
             _commandResult.value.paramData,
@@ -901,7 +918,7 @@ abstract class Command<TParam, TResult> extends CustomValueNotifier<TResult> {
   /// [restriction] : `ValueListenable<bool>` that can be used to enable/disable
   /// the command based on some other state change. `true` means that the Command cannot be executed.
   /// If omitted the command can be executed always except it's already executing
-  /// [ifRestrictedExecuteInstead] if  [restriction] is set for the command and its value is `true`
+  /// [ifRestrictedRunInstead] if  [restriction] is set for the command and its value is `true`
   /// this function will be called instead of the wrapped function.
   /// This is useful if you want to execute a different function when the command
   /// is restricted. For example you could show a dialog to let the user logg in
@@ -924,19 +941,29 @@ abstract class Command<TParam, TResult> extends CustomValueNotifier<TResult> {
   static Command<void, void> createSyncNoParamNoResult(
     void Function() action, {
     ValueListenable<bool>? restriction,
+    void Function()? ifRestrictedRunInstead,
+    @Deprecated(
+      'Use ifRestrictedRunInstead instead. '
+      'This will be removed in v10.0.0. '
+      'See BREAKING_CHANGE_EXECUTE_TO_RUN.md for migration guide.',
+    )
     void Function()? ifRestrictedExecuteInstead,
     ErrorFilter? errorFilter,
     ErrorFilterFn? errorFilterFn,
     bool notifyOnlyWhenValueChanges = false,
     String? debugName,
   }) {
+    assert(
+      !(ifRestrictedRunInstead != null && ifRestrictedExecuteInstead != null),
+      'Cannot provide both ifRestrictedRunInstead and ifRestrictedExecuteInstead. Use ifRestrictedRunInstead.',
+    );
+    final handler = ifRestrictedRunInstead ?? ifRestrictedExecuteInstead;
     return CommandSync<void, void>(
       funcNoParam: action,
       initialValue: null,
       restriction: restriction,
-      ifRestrictedExecuteInstead: ifRestrictedExecuteInstead != null
-          ? (_) => ifRestrictedExecuteInstead()
-          : null,
+      ifRestrictedRunInstead: handler != null ? (_) => handler() : null,
+      ifRestrictedExecuteInstead: null,
       includeLastResultInCommandResults: false,
       noReturnValue: true,
       errorFilter: errorFilter,
@@ -952,7 +979,7 @@ abstract class Command<TParam, TResult> extends CustomValueNotifier<TResult> {
   /// [restriction] : `ValueListenable<bool>` that can be used to enable/disable
   /// the command based on some other state change. `true` means that the Command cannot be executed.
   /// If omitted the command can be executed always except it's already executing
-  /// [ifRestrictedExecuteInstead] if  [restriction] is set for the command and its value is `true`
+  /// [ifRestrictedRunInstead] if  [restriction] is set for the command and its value is `true`
   /// this function will be called instead of the wrapped function.
   /// This is useful if you want to execute a different function when the command
   /// is restricted. For example you could show a dialog to let the user logg in
@@ -975,17 +1002,29 @@ abstract class Command<TParam, TResult> extends CustomValueNotifier<TResult> {
   static Command<TParam, void> createSyncNoResult<TParam>(
     void Function(TParam x) action, {
     ValueListenable<bool>? restriction,
+    RunInsteadHandler<TParam>? ifRestrictedRunInstead,
+    @Deprecated(
+      'Use ifRestrictedRunInstead instead. '
+      'This will be removed in v10.0.0. '
+      'See BREAKING_CHANGE_EXECUTE_TO_RUN.md for migration guide.',
+    )
     ExecuteInsteadHandler<TParam>? ifRestrictedExecuteInstead,
     ErrorFilter? errorFilter,
     ErrorFilterFn? errorFilterFn,
     bool notifyOnlyWhenValueChanges = false,
     String? debugName,
   }) {
+    assert(
+      !(ifRestrictedRunInstead != null && ifRestrictedExecuteInstead != null),
+      'Cannot provide both ifRestrictedRunInstead and ifRestrictedExecuteInstead. Use ifRestrictedRunInstead.',
+    );
     return CommandSync<TParam, void>(
       func: (x) => action(x),
       initialValue: null,
       restriction: restriction,
-      ifRestrictedExecuteInstead: ifRestrictedExecuteInstead,
+      ifRestrictedRunInstead:
+          ifRestrictedRunInstead ?? ifRestrictedExecuteInstead,
+      ifRestrictedExecuteInstead: null,
       includeLastResultInCommandResults: false,
       noReturnValue: true,
       errorFilter: errorFilter,
@@ -1002,7 +1041,7 @@ abstract class Command<TParam, TResult> extends CustomValueNotifier<TResult> {
   /// [restriction] : `ValueListenable<bool>` that can be used to enable/disable the command based on
   /// some other state change. `true` means that the Command cannot be executed.
   /// If omitted the command can be executed always except it's already executing
-  /// [ifRestrictedExecuteInstead] if  [restriction] is set for the command and its value is `true`
+  /// [ifRestrictedRunInstead] if  [restriction] is set for the command and its value is `true`
   /// this function will be called instead of the wrapped function.
   /// This is useful if you want to execute a different function when the command
   /// is restricted. For example you could show a dialog to let the user logg in
@@ -1027,6 +1066,12 @@ abstract class Command<TParam, TResult> extends CustomValueNotifier<TResult> {
     TResult Function() func, {
     required TResult initialValue,
     ValueListenable<bool>? restriction,
+    void Function()? ifRestrictedRunInstead,
+    @Deprecated(
+      'Use ifRestrictedRunInstead instead. '
+      'This will be removed in v10.0.0. '
+      'See BREAKING_CHANGE_EXECUTE_TO_RUN.md for migration guide.',
+    )
     void Function()? ifRestrictedExecuteInstead,
     bool includeLastResultInCommandResults = false,
     ErrorFilter? errorFilter,
@@ -1034,13 +1079,17 @@ abstract class Command<TParam, TResult> extends CustomValueNotifier<TResult> {
     bool notifyOnlyWhenValueChanges = false,
     String? debugName,
   }) {
+    assert(
+      !(ifRestrictedRunInstead != null && ifRestrictedExecuteInstead != null),
+      'Cannot provide both ifRestrictedRunInstead and ifRestrictedExecuteInstead. Use ifRestrictedRunInstead.',
+    );
+    final handler = ifRestrictedRunInstead ?? ifRestrictedExecuteInstead;
     return CommandSync<void, TResult>(
       funcNoParam: func,
       initialValue: initialValue,
       restriction: restriction,
-      ifRestrictedExecuteInstead: ifRestrictedExecuteInstead != null
-          ? (_) => ifRestrictedExecuteInstead()
-          : null,
+      ifRestrictedRunInstead: handler != null ? (_) => handler() : null,
+      ifRestrictedExecuteInstead: null,
       includeLastResultInCommandResults: includeLastResultInCommandResults,
       noReturnValue: false,
       errorFilter: errorFilter,
@@ -1057,7 +1106,7 @@ abstract class Command<TParam, TResult> extends CustomValueNotifier<TResult> {
   /// [restriction] : `ValueListenable<bool>` that can be used to enable/disable the command based on
   ///  some other state change. `true` means that the Command cannot be executed.
   /// If omitted the command can be executed always except it's already executing
-  /// [ifRestrictedExecuteInstead] if  [restriction] is set for the command and its value is `true`
+  /// [ifRestrictedRunInstead] if  [restriction] is set for the command and its value is `true`
   /// this function will be called instead of the wrapped function.
   /// This is useful if you want to execute a different function when the command
   /// is restricted. For example you could show a dialog to let the user logg in
@@ -1083,6 +1132,12 @@ abstract class Command<TParam, TResult> extends CustomValueNotifier<TResult> {
     TResult Function(TParam x) func, {
     required TResult initialValue,
     ValueListenable<bool>? restriction,
+    RunInsteadHandler<TParam>? ifRestrictedRunInstead,
+    @Deprecated(
+      'Use ifRestrictedRunInstead instead. '
+      'This will be removed in v10.0.0. '
+      'See BREAKING_CHANGE_EXECUTE_TO_RUN.md for migration guide.',
+    )
     ExecuteInsteadHandler<TParam>? ifRestrictedExecuteInstead,
     bool includeLastResultInCommandResults = false,
     ErrorFilter? errorFilter,
@@ -1090,11 +1145,17 @@ abstract class Command<TParam, TResult> extends CustomValueNotifier<TResult> {
     bool notifyOnlyWhenValueChanges = false,
     String? debugName,
   }) {
+    assert(
+      !(ifRestrictedRunInstead != null && ifRestrictedExecuteInstead != null),
+      'Cannot provide both ifRestrictedRunInstead and ifRestrictedExecuteInstead. Use ifRestrictedRunInstead.',
+    );
     return CommandSync<TParam, TResult>(
       func: func,
       initialValue: initialValue,
       restriction: restriction,
-      ifRestrictedExecuteInstead: ifRestrictedExecuteInstead,
+      ifRestrictedRunInstead:
+          ifRestrictedRunInstead ?? ifRestrictedExecuteInstead,
+      ifRestrictedExecuteInstead: null,
       includeLastResultInCommandResults: includeLastResultInCommandResults,
       noReturnValue: false,
       errorFilter: errorFilter,
@@ -1114,7 +1175,7 @@ abstract class Command<TParam, TResult> extends CustomValueNotifier<TResult> {
   /// [restriction] : `ValueListenable<bool>` that can be used to enable/disable
   /// the command based on some other state change. `true` means that the Command cannot be executed.
   /// If omitted the command can be executed always except it's already executing
-  /// [ifRestrictedExecuteInstead] if  [restriction] is set for the command and its value is `true`
+  /// [ifRestrictedRunInstead] if  [restriction] is set for the command and its value is `true`
   /// this function will be called instead of the wrapped function.
   /// This is useful if you want to execute a different function when the command
   /// is restricted. For example you could show a dialog to let the user logg in
@@ -1132,19 +1193,29 @@ abstract class Command<TParam, TResult> extends CustomValueNotifier<TResult> {
   static Command<void, void> createAsyncNoParamNoResult(
     Future<void> Function() action, {
     ValueListenable<bool>? restriction,
+    void Function()? ifRestrictedRunInstead,
+    @Deprecated(
+      'Use ifRestrictedRunInstead instead. '
+      'This will be removed in v10.0.0. '
+      'See BREAKING_CHANGE_EXECUTE_TO_RUN.md for migration guide.',
+    )
     void Function()? ifRestrictedExecuteInstead,
     ErrorFilter? errorFilter,
     ErrorFilterFn? errorFilterFn,
     bool notifyOnlyWhenValueChanges = false,
     String? debugName,
   }) {
+    assert(
+      !(ifRestrictedRunInstead != null && ifRestrictedExecuteInstead != null),
+      'Cannot provide both ifRestrictedRunInstead and ifRestrictedExecuteInstead. Use ifRestrictedRunInstead.',
+    );
+    final handler = ifRestrictedRunInstead ?? ifRestrictedExecuteInstead;
     return CommandAsync<void, void>(
       funcNoParam: action,
       initialValue: null,
       restriction: restriction,
-      ifRestrictedExecuteInstead: ifRestrictedExecuteInstead != null
-          ? (_) => ifRestrictedExecuteInstead()
-          : null,
+      ifRestrictedRunInstead: handler != null ? (_) => handler() : null,
+      ifRestrictedExecuteInstead: null,
       includeLastResultInCommandResults: false,
       noReturnValue: true,
       errorFilter: errorFilter,
@@ -1162,7 +1233,7 @@ abstract class Command<TParam, TResult> extends CustomValueNotifier<TResult> {
   /// [restriction] : `ValueListenable<bool>` that can be used to enable/disable
   /// the command based on some other state change. `true` means that the Command cannot be executed.
   /// If omitted the command can be executed always except it's already executing
-  /// [ifRestrictedExecuteInstead] if  [restriction] is set for the command and its value is `true`
+  /// [ifRestrictedRunInstead] if  [restriction] is set for the command and its value is `true`
   /// this function will be called instead of the wrapped function.
   /// This is useful if you want to execute a different function when the command
   /// is restricted. For example you could show a dialog to let the user logg in
@@ -1180,17 +1251,29 @@ abstract class Command<TParam, TResult> extends CustomValueNotifier<TResult> {
   static Command<TParam, void> createAsyncNoResult<TParam>(
     Future<void> Function(TParam x) action, {
     ValueListenable<bool>? restriction,
+    RunInsteadHandler<TParam>? ifRestrictedRunInstead,
+    @Deprecated(
+      'Use ifRestrictedRunInstead instead. '
+      'This will be removed in v10.0.0. '
+      'See BREAKING_CHANGE_EXECUTE_TO_RUN.md for migration guide.',
+    )
     ExecuteInsteadHandler<TParam>? ifRestrictedExecuteInstead,
     ErrorFilter? errorFilter,
     ErrorFilterFn? errorFilterFn,
     bool notifyOnlyWhenValueChanges = false,
     String? debugName,
   }) {
+    assert(
+      !(ifRestrictedRunInstead != null && ifRestrictedExecuteInstead != null),
+      'Cannot provide both ifRestrictedRunInstead and ifRestrictedExecuteInstead. Use ifRestrictedRunInstead.',
+    );
     return CommandAsync<TParam, void>(
       func: action,
       initialValue: null,
       restriction: restriction,
-      ifRestrictedExecuteInstead: ifRestrictedExecuteInstead,
+      ifRestrictedRunInstead:
+          ifRestrictedRunInstead ?? ifRestrictedExecuteInstead,
+      ifRestrictedExecuteInstead: null,
       includeLastResultInCommandResults: false,
       noReturnValue: true,
       errorFilter: errorFilter,
@@ -1207,7 +1290,7 @@ abstract class Command<TParam, TResult> extends CustomValueNotifier<TResult> {
   /// [restriction] : `ValueListenable<bool>` that can be used to enable/disable the command based on
   ///  some other state change. `true` means that the Command cannot be executed. If omitted the command
   /// can be executed always except it's already executing
-  /// [ifRestrictedExecuteInstead] if  [restriction] is set for the command and its value is `true`
+  /// [ifRestrictedRunInstead] if  [restriction] is set for the command and its value is `true`
   /// this function will be called instead of the wrapped function.
   /// This is useful if you want to execute a different function when the command
   /// is restricted. For example you could show a dialog to let the user logg in
@@ -1229,6 +1312,12 @@ abstract class Command<TParam, TResult> extends CustomValueNotifier<TResult> {
     Future<TResult> Function() func, {
     required TResult initialValue,
     ValueListenable<bool>? restriction,
+    void Function()? ifRestrictedRunInstead,
+    @Deprecated(
+      'Use ifRestrictedRunInstead instead. '
+      'This will be removed in v10.0.0. '
+      'See BREAKING_CHANGE_EXECUTE_TO_RUN.md for migration guide.',
+    )
     void Function()? ifRestrictedExecuteInstead,
     bool includeLastResultInCommandResults = false,
     ErrorFilter? errorFilter,
@@ -1236,13 +1325,17 @@ abstract class Command<TParam, TResult> extends CustomValueNotifier<TResult> {
     bool notifyOnlyWhenValueChanges = false,
     String? debugName,
   }) {
+    assert(
+      !(ifRestrictedRunInstead != null && ifRestrictedExecuteInstead != null),
+      'Cannot provide both ifRestrictedRunInstead and ifRestrictedExecuteInstead. Use ifRestrictedRunInstead.',
+    );
+    final handler = ifRestrictedRunInstead ?? ifRestrictedExecuteInstead;
     return CommandAsync<void, TResult>(
       funcNoParam: func,
       initialValue: initialValue,
       restriction: restriction,
-      ifRestrictedExecuteInstead: ifRestrictedExecuteInstead != null
-          ? (_) => ifRestrictedExecuteInstead()
-          : null,
+      ifRestrictedRunInstead: handler != null ? (_) => handler() : null,
+      ifRestrictedExecuteInstead: null,
       includeLastResultInCommandResults: includeLastResultInCommandResults,
       noReturnValue: false,
       errorFilter: errorFilter,
@@ -1259,7 +1352,7 @@ abstract class Command<TParam, TResult> extends CustomValueNotifier<TResult> {
   /// [restriction] : `ValueListenable<bool>` that can be used to enable/disable the command based on
   ///  some other state change. `true` means that the Command cannot be executed.
   /// If omitted the command can be executed always except it's already executing
-  /// [ifRestrictedExecuteInstead] if  [restriction] is set for the command and its value is `true`
+  /// [ifRestrictedRunInstead] if  [restriction] is set for the command and its value is `true`
   /// this function will be called instead of the wrapped function.
   /// This is useful if you want to execute a different function when the command
   /// is restricted. For example you could show a dialog to let the user logg in
@@ -1281,6 +1374,12 @@ abstract class Command<TParam, TResult> extends CustomValueNotifier<TResult> {
     Future<TResult> Function(TParam x) func, {
     required TResult initialValue,
     ValueListenable<bool>? restriction,
+    RunInsteadHandler<TParam>? ifRestrictedRunInstead,
+    @Deprecated(
+      'Use ifRestrictedRunInstead instead. '
+      'This will be removed in v10.0.0. '
+      'See BREAKING_CHANGE_EXECUTE_TO_RUN.md for migration guide.',
+    )
     ExecuteInsteadHandler<TParam>? ifRestrictedExecuteInstead,
     bool includeLastResultInCommandResults = false,
     ErrorFilter? errorFilter,
@@ -1288,11 +1387,17 @@ abstract class Command<TParam, TResult> extends CustomValueNotifier<TResult> {
     bool notifyOnlyWhenValueChanges = false,
     String? debugName,
   }) {
+    assert(
+      !(ifRestrictedRunInstead != null && ifRestrictedExecuteInstead != null),
+      'Cannot provide both ifRestrictedRunInstead and ifRestrictedExecuteInstead. Use ifRestrictedRunInstead.',
+    );
     return CommandAsync<TParam, TResult>(
       func: func,
       initialValue: initialValue,
       restriction: restriction,
-      ifRestrictedExecuteInstead: ifRestrictedExecuteInstead,
+      ifRestrictedRunInstead:
+          ifRestrictedRunInstead ?? ifRestrictedExecuteInstead,
+      ifRestrictedExecuteInstead: null,
       includeLastResultInCommandResults: includeLastResultInCommandResults,
       noReturnValue: false,
       errorFilter: errorFilter,
@@ -1313,7 +1418,7 @@ abstract class Command<TParam, TResult> extends CustomValueNotifier<TResult> {
   /// [restriction] : `ValueListenable<bool>` that can be used to enable/disable
   /// the command based on some other state change. `true` means that the Command cannot be executed.
   /// If omitted the command can be executed always except it's already executing
-  /// [ifRestrictedExecuteInstead] if  [restriction] is set for the command and its value is `true`
+  /// [ifRestrictedRunInstead] if  [restriction] is set for the command and its value is `true`
   /// this function will be called instead of the wrapped function.
   /// This is useful if you want to execute a different function when the command
   /// is restricted. For example you could show a dialog to let the user logg in
@@ -1333,20 +1438,30 @@ abstract class Command<TParam, TResult> extends CustomValueNotifier<TResult> {
     required UndoFn<TUndoState, void> undo,
     bool undoOnExecutionFailure = true,
     ValueListenable<bool>? restriction,
+    void Function()? ifRestrictedRunInstead,
+    @Deprecated(
+      'Use ifRestrictedRunInstead instead. '
+      'This will be removed in v10.0.0. '
+      'See BREAKING_CHANGE_EXECUTE_TO_RUN.md for migration guide.',
+    )
     void Function()? ifRestrictedExecuteInstead,
     ErrorFilter? errorFilter = const ErrorHandlerLocal(),
     ErrorFilterFn? errorFilterFn,
     bool notifyOnlyWhenValueChanges = false,
     String? debugName,
   }) {
+    assert(
+      !(ifRestrictedRunInstead != null && ifRestrictedExecuteInstead != null),
+      'Cannot provide both ifRestrictedRunInstead and ifRestrictedExecuteInstead. Use ifRestrictedRunInstead.',
+    );
+    final handler = ifRestrictedRunInstead ?? ifRestrictedExecuteInstead;
     return UndoableCommand<void, void, TUndoState>(
       funcNoParam: action,
       undo: undo,
       initialValue: null,
       restriction: restriction,
-      ifRestrictedExecuteInstead: ifRestrictedExecuteInstead != null
-          ? (_) => ifRestrictedExecuteInstead()
-          : null,
+      ifRestrictedRunInstead: handler != null ? (_) => handler() : null,
+      ifRestrictedExecuteInstead: null,
       undoOnExecutionFailure: undoOnExecutionFailure,
       includeLastResultInCommandResults: false,
       noReturnValue: true,
@@ -1368,7 +1483,7 @@ abstract class Command<TParam, TResult> extends CustomValueNotifier<TResult> {
   /// [restriction] : `ValueListenable<bool>` that can be used to enable/disable
   /// the command based on some other state change. `true` means that the Command cannot be executed.
   /// If omitted the command can be executed always except it's already executing
-  /// [ifRestrictedExecuteInstead] if  [restriction] is set for the command and its value is `true`
+  /// [ifRestrictedRunInstead] if  [restriction] is set for the command and its value is `true`
   /// this function will be called instead of the wrapped function.
   /// This is useful if you want to execute a different function when the command
   /// is restricted. For example you could show a dialog to let the user logg in
@@ -1388,19 +1503,31 @@ abstract class Command<TParam, TResult> extends CustomValueNotifier<TResult> {
     required UndoFn<TUndoState, void> undo,
     bool undoOnExecutionFailure = true,
     ValueListenable<bool>? restriction,
+    RunInsteadHandler<TParam>? ifRestrictedRunInstead,
+    @Deprecated(
+      'Use ifRestrictedRunInstead instead. '
+      'This will be removed in v10.0.0. '
+      'See BREAKING_CHANGE_EXECUTE_TO_RUN.md for migration guide.',
+    )
     ExecuteInsteadHandler<TParam>? ifRestrictedExecuteInstead,
     ErrorFilter? errorFilter,
     ErrorFilterFn? errorFilterFn,
     bool notifyOnlyWhenValueChanges = false,
     String? debugName,
   }) {
+    assert(
+      !(ifRestrictedRunInstead != null && ifRestrictedExecuteInstead != null),
+      'Cannot provide both ifRestrictedRunInstead and ifRestrictedExecuteInstead. Use ifRestrictedRunInstead.',
+    );
     return UndoableCommand<TParam, void, TUndoState>(
       func: action,
       undo: undo,
       undoOnExecutionFailure: undoOnExecutionFailure,
       initialValue: null,
       restriction: restriction,
-      ifRestrictedExecuteInstead: ifRestrictedExecuteInstead,
+      ifRestrictedRunInstead:
+          ifRestrictedRunInstead ?? ifRestrictedExecuteInstead,
+      ifRestrictedExecuteInstead: null,
       includeLastResultInCommandResults: false,
       noReturnValue: true,
       errorFilter: errorFilter,
@@ -1422,7 +1549,7 @@ abstract class Command<TParam, TResult> extends CustomValueNotifier<TResult> {
   /// [restriction] : `ValueListenable<bool>` that can be used to enable/disable
   /// the command based on some other state change. `true` means that the Command cannot be executed.
   /// If omitted the command can be executed always except it's already executing
-  /// [ifRestrictedExecuteInstead] if  [restriction] is set for the command and its value is `true`
+  /// [ifRestrictedRunInstead] if  [restriction] is set for the command and its value is `true`
   /// this function will be called instead of the wrapped function.
   /// This is useful if you want to execute a different function when the command
   /// is restricted. For example you could show a dialog to let the user logg in
@@ -1443,6 +1570,12 @@ abstract class Command<TParam, TResult> extends CustomValueNotifier<TResult> {
     required UndoFn<TUndoState, TResult> undo,
     bool undoOnExecutionFailure = true,
     ValueListenable<bool>? restriction,
+    void Function()? ifRestrictedRunInstead,
+    @Deprecated(
+      'Use ifRestrictedRunInstead instead. '
+      'This will be removed in v10.0.0. '
+      'See BREAKING_CHANGE_EXECUTE_TO_RUN.md for migration guide.',
+    )
     void Function()? ifRestrictedExecuteInstead,
     bool includeLastResultInCommandResults = false,
     ErrorFilter? errorFilter,
@@ -1450,15 +1583,19 @@ abstract class Command<TParam, TResult> extends CustomValueNotifier<TResult> {
     bool notifyOnlyWhenValueChanges = false,
     String? debugName,
   }) {
+    assert(
+      !(ifRestrictedRunInstead != null && ifRestrictedExecuteInstead != null),
+      'Cannot provide both ifRestrictedRunInstead and ifRestrictedExecuteInstead. Use ifRestrictedRunInstead.',
+    );
+    final handler = ifRestrictedRunInstead ?? ifRestrictedExecuteInstead;
     return UndoableCommand<void, TResult, TUndoState>(
       funcNoParam: func,
       undo: undo,
       initialValue: initialValue,
       undoOnExecutionFailure: undoOnExecutionFailure,
       restriction: restriction,
-      ifRestrictedExecuteInstead: ifRestrictedExecuteInstead != null
-          ? (_) => ifRestrictedExecuteInstead()
-          : null,
+      ifRestrictedRunInstead: handler != null ? (_) => handler() : null,
+      ifRestrictedExecuteInstead: null,
       includeLastResultInCommandResults: includeLastResultInCommandResults,
       noReturnValue: false,
       errorFilter: errorFilter,
@@ -1480,7 +1617,7 @@ abstract class Command<TParam, TResult> extends CustomValueNotifier<TResult> {
   /// [restriction] : `ValueListenable<bool>` that can be used to enable/disable
   /// the command based on some other state change. `true` means that the Command cannot be executed.
   /// If omitted the command can be executed always except it's already executing
-  /// [ifRestrictedExecuteInstead] if  [restriction] is set for the command and its value is `true`
+  /// [ifRestrictedRunInstead] if  [restriction] is set for the command and its value is `true`
   /// this function will be called instead of the wrapped function.
   /// This is useful if you want to execute a different function when the command
   /// is restricted. For example you could show a dialog to let the user logg in
@@ -1501,6 +1638,12 @@ abstract class Command<TParam, TResult> extends CustomValueNotifier<TResult> {
     required UndoFn<TUndoState, TResult> undo,
     bool undoOnExecutionFailure = true,
     ValueListenable<bool>? restriction,
+    RunInsteadHandler<TParam>? ifRestrictedRunInstead,
+    @Deprecated(
+      'Use ifRestrictedRunInstead instead. '
+      'This will be removed in v10.0.0. '
+      'See BREAKING_CHANGE_EXECUTE_TO_RUN.md for migration guide.',
+    )
     ExecuteInsteadHandler<TParam>? ifRestrictedExecuteInstead,
     bool includeLastResultInCommandResults = false,
     ErrorFilter? errorFilter,
@@ -1508,12 +1651,18 @@ abstract class Command<TParam, TResult> extends CustomValueNotifier<TResult> {
     bool notifyOnlyWhenValueChanges = false,
     String? debugName,
   }) {
+    assert(
+      !(ifRestrictedRunInstead != null && ifRestrictedExecuteInstead != null),
+      'Cannot provide both ifRestrictedRunInstead and ifRestrictedExecuteInstead. Use ifRestrictedRunInstead.',
+    );
     return UndoableCommand<TParam, TResult, TUndoState>(
       func: func,
       initialValue: initialValue,
       undo: undo,
       restriction: restriction,
-      ifRestrictedExecuteInstead: ifRestrictedExecuteInstead,
+      ifRestrictedRunInstead:
+          ifRestrictedRunInstead ?? ifRestrictedExecuteInstead,
+      ifRestrictedExecuteInstead: null,
       includeLastResultInCommandResults: includeLastResultInCommandResults,
       noReturnValue: false,
       errorFilter: errorFilter,

@@ -55,6 +55,12 @@ class UndoableCommand<TParam, TResult, TUndoState>
     required UndoFn<TUndoState, TResult> undo,
     required super.initialValue,
     required super.restriction,
+    required super.ifRestrictedRunInstead,
+    @Deprecated(
+      'Use ifRestrictedRunInstead instead. '
+      'This will be removed in v10.0.0. '
+      'See BREAKING_CHANGE_EXECUTE_TO_RUN.md for migration guide.',
+    )
     required super.ifRestrictedExecuteInstead,
     required bool undoOnExecutionFailure,
     required super.includeLastResultInCommandResults,

@@ -1,3 +1,9 @@
+[9.0.2] - 2025-11-15
+
+### Fixes
+
+- **Properly deprecated ExecuteInsteadHandler and ifRestrictedExecuteInstead**: Added proper deprecation instead of breaking renames. Both old (`ExecuteInsteadHandler`, `ifRestrictedExecuteInstead`) and new (`RunInsteadHandler`, `ifRestrictedRunInstead`) names now work during v9.x. Added comprehensive tests for deprecated variants to maintain coverage. Updated fix_data.yaml to auto-migrate users via `dart fix`.
+
 [9.0.1] - 2025-11-14
 
 ### Fixes

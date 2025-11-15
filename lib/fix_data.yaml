@@ -3,6 +3,10 @@
 # Usage: dart fix --apply
 #
 # See: https://github.com/flutter/flutter/blob/master/docs/contributing/Data-driven-Fixes.md
+#
+# Note: Typedef renames (ExecuteInsteadHandler → RunInsteadHandler) cannot be
+# automatically fixed by dart fix. The @Deprecated annotation will guide users
+# to use the new RunInsteadHandler type. Parameter renames will be auto-fixed.
 
 version: 1
 transforms:

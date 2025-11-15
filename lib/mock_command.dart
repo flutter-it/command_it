@@ -18,6 +18,12 @@ class MockCommand<TParam, TResult> extends Command<TParam, TResult> {
     super.noParamValue = false,
     super.noReturnValue = false,
     super.restriction,
+    super.ifRestrictedRunInstead,
+    @Deprecated(
+      'Use ifRestrictedRunInstead instead. '
+      'This will be removed in v10.0.0. '
+      'See BREAKING_CHANGE_EXECUTE_TO_RUN.md for migration guide.',
+    )
     super.ifRestrictedExecuteInstead,
     super.includeLastResultInCommandResults = false,
     super.errorFilter,

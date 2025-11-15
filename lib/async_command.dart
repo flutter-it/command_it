@@ -9,6 +9,12 @@ class CommandAsync<TParam, TResult> extends Command<TParam, TResult> {
     Future<TResult> Function()? funcNoParam,
     required super.initialValue,
     required super.restriction,
+    required super.ifRestrictedRunInstead,
+    @Deprecated(
+      'Use ifRestrictedRunInstead instead. '
+      'This will be removed in v10.0.0. '
+      'See BREAKING_CHANGE_EXECUTE_TO_RUN.md for migration guide.',
+    )
     required super.ifRestrictedExecuteInstead,
     required super.includeLastResultInCommandResults,
     required super.noReturnValue,
