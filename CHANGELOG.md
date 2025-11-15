@@ -1,3 +1,9 @@
+[9.0.1] - 2025-11-14
+
+### Fixes
+
+- **Enhanced fix_data.yaml**: Added comprehensive coverage for all Command subclasses (`CommandAsync`, `CommandSync`, `UndoableCommand`) to ensure `dart fix` properly migrates deprecated API usage when commands are accessed through property getters
+
 [9.0.0] - 2025-11-14
 
 ### Breaking Changes - API Terminology Migration (execute → run)

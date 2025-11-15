@@ -20,12 +20,62 @@ transforms:
       - kind: 'rename'
         newName: 'run'
 
+  - title: 'Rename execute to run (CommandAsync)'
+    date: 2025-11-13
+    element:
+      uris: ['package:command_it/command_it.dart']
+      method: 'execute'
+      inClass: 'CommandAsync'
+    changes:
+      - kind: 'rename'
+        newName: 'run'
+
+  - title: 'Rename execute to run (CommandSync)'
+    date: 2025-11-13
+    element:
+      uris: ['package:command_it/command_it.dart']
+      method: 'execute'
+      inClass: 'CommandSync'
+    changes:
+      - kind: 'rename'
+        newName: 'run'
+
+  - title: 'Rename execute to run (UndoableCommand)'
+    date: 2025-11-13
+    element:
+      uris: ['package:command_it/command_it.dart']
+      method: 'execute'
+      inClass: 'UndoableCommand'
+    changes:
+      - kind: 'rename'
+        newName: 'run'
+
   - title: 'Rename executeWithFuture to runAsync'
     date: 2025-11-13
     element:
       uris: ['package:command_it/command_it.dart']
       method: 'executeWithFuture'
       inClass: 'Command'
+    changes:
+      - kind: 'rename'
+        newName: 'runAsync'
+
+  - title: 'Rename executeWithFuture to runAsync (CommandAsync)'
+    date: 2025-11-13
+    element:
+      uris: ['package:command_it/command_it.dart']
+      method: 'executeWithFuture'
+      inClass: 'CommandAsync'
+    changes:
+      - kind: 'rename'
+        newName: 'runAsync'
+
+  - title: 'Rename executeWithFuture to runAsync (UndoableCommand)'
+    date: 2025-11-13
+    element:
+      uris: ['package:command_it/command_it.dart']
+      method: 'executeWithFuture'
+      inClass: 'UndoableCommand'
     changes:
       - kind: 'rename'
         newName: 'runAsync'
@@ -44,12 +94,62 @@ transforms:
       - kind: 'rename'
         newName: 'errors'
 
+  - title: 'Rename thrownExceptions to errors (CommandAsync)'
+    date: 2025-11-13
+    element:
+      uris: ['package:command_it/command_it.dart']
+      getter: 'thrownExceptions'
+      inClass: 'CommandAsync'
+    changes:
+      - kind: 'rename'
+        newName: 'errors'
+
+  - title: 'Rename thrownExceptions to errors (CommandSync)'
+    date: 2025-11-13
+    element:
+      uris: ['package:command_it/command_it.dart']
+      getter: 'thrownExceptions'
+      inClass: 'CommandSync'
+    changes:
+      - kind: 'rename'
+        newName: 'errors'
+
+  - title: 'Rename thrownExceptions to errors (UndoableCommand)'
+    date: 2025-11-13
+    element:
+      uris: ['package:command_it/command_it.dart']
+      getter: 'thrownExceptions'
+      inClass: 'UndoableCommand'
+    changes:
+      - kind: 'rename'
+        newName: 'errors'
+
   - title: 'Rename isExecuting to isRunning'
     date: 2025-11-13
     element:
       uris: ['package:command_it/command_it.dart']
       getter: 'isExecuting'
       inClass: 'Command'
+    changes:
+      - kind: 'rename'
+        newName: 'isRunning'
+
+  - title: 'Rename isExecuting to isRunning (CommandAsync)'
+    date: 2025-11-13
+    element:
+      uris: ['package:command_it/command_it.dart']
+      getter: 'isExecuting'
+      inClass: 'CommandAsync'
+    changes:
+      - kind: 'rename'
+        newName: 'isRunning'
+
+  - title: 'Rename isExecuting to isRunning (UndoableCommand)'
+    date: 2025-11-13
+    element:
+      uris: ['package:command_it/command_it.dart']
+      getter: 'isExecuting'
+      inClass: 'UndoableCommand'
     changes:
       - kind: 'rename'
         newName: 'isRunning'
@@ -64,12 +164,72 @@ transforms:
       - kind: 'rename'
         newName: 'isRunningSync'
 
+  - title: 'Rename isExecutingSync to isRunningSync (CommandAsync)'
+    date: 2025-11-13
+    element:
+      uris: ['package:command_it/command_it.dart']
+      getter: 'isExecutingSync'
+      inClass: 'CommandAsync'
+    changes:
+      - kind: 'rename'
+        newName: 'isRunningSync'
+
+  - title: 'Rename isExecutingSync to isRunningSync (CommandSync)'
+    date: 2025-11-13
+    element:
+      uris: ['package:command_it/command_it.dart']
+      getter: 'isExecutingSync'
+      inClass: 'CommandSync'
+    changes:
+      - kind: 'rename'
+        newName: 'isRunningSync'
+
+  - title: 'Rename isExecutingSync to isRunningSync (UndoableCommand)'
+    date: 2025-11-13
+    element:
+      uris: ['package:command_it/command_it.dart']
+      getter: 'isExecutingSync'
+      inClass: 'UndoableCommand'
+    changes:
+      - kind: 'rename'
+        newName: 'isRunningSync'
+
   - title: 'Rename canExecute to canRun'
     date: 2025-11-13
     element:
       uris: ['package:command_it/command_it.dart']
       getter: 'canExecute'
       inClass: 'Command'
+    changes:
+      - kind: 'rename'
+        newName: 'canRun'
+
+  - title: 'Rename canExecute to canRun (CommandAsync)'
+    date: 2025-11-13
+    element:
+      uris: ['package:command_it/command_it.dart']
+      getter: 'canExecute'
+      inClass: 'CommandAsync'
+    changes:
+      - kind: 'rename'
+        newName: 'canRun'
+
+  - title: 'Rename canExecute to canRun (CommandSync)'
+    date: 2025-11-13
+    element:
+      uris: ['package:command_it/command_it.dart']
+      getter: 'canExecute'
+      inClass: 'CommandSync'
+    changes:
+      - kind: 'rename'
+        newName: 'canRun'
+
+  - title: 'Rename canExecute to canRun (UndoableCommand)'
+    date: 2025-11-13
+    element:
+      uris: ['package:command_it/command_it.dart']
+      getter: 'canExecute'
+      inClass: 'UndoableCommand'
     changes:
       - kind: 'rename'
         newName: 'canRun'
