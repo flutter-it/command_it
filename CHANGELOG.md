@@ -1,3 +1,17 @@
+[9.1.1] - 2025-11-21
+
+### Improvements
+
+- **Renamed GlobalIfNoLocalErrorFilter**: Renamed `FirstLocalThenGlobalErrorFilter` to `GlobalIfNoLocalErrorFilter` for better clarity. The name now clearly indicates "global if no local handler".
+
+### New Features
+
+- **Added GlobalErrorFilter**: New filter that routes errors ONLY to the global handler, regardless of local listeners. Returns `ErrorReaction.globalHandler`.
+
+### Fixes
+
+- **Removed incorrectly named GlobalErrorFilter**: The previous `GlobalErrorFilter` that was deprecated in v9.1.0 has been removed and replaced with the correct implementation.
+
 [9.1.0] - 2025-11-21
 
 ### New Features
@@ -45,9 +59,9 @@ class MyApp extends WatchingWidget {
 - **Improved ErrorFilter class naming consistency**: Renamed `ErrorHandler*` classes to simpler `*ErrorFilter` pattern to better align with existing filters. Old names remain functional with deprecation warnings until v10.0.0.
 
 **Class name changes:**
-- `ErrorHandlerGlobalIfNoLocal` → `GlobalErrorFilter` (deprecated)
+- `ErrorHandlerGlobalIfNoLocal` → `GlobalIfNoLocalErrorFilter` (deprecated)
 - `ErrorHandlerLocal` → `LocalErrorFilter` (deprecated)
-- `ErrorHandlerLocalAndGlobal` → `LocalAndGlobalErrorFilter` (deprecated)
+- `ErrorHandlerLocalAndGlobal` → `LocalAndGlobalIfNoLocalErrorFilter` (deprecated)
 
 **Why this change:**
 - Better naming consistency: matches `TableErrorFilter` and `PredicatesErrorFilter` pattern
@@ -62,7 +76,7 @@ Command.errorFilterDefault = const ErrorHandlerGlobalIfNoLocal();
 errorFilter: const ErrorHandlerLocal()
 
 // New
-Command.errorFilterDefault = const GlobalErrorFilter();
+Command.errorFilterDefault = const GlobalIfNoLocalErrorFilter();
 errorFilter: const LocalErrorFilter()
 ```
 

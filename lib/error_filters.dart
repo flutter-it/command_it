@@ -64,8 +64,8 @@ class ErrorFilerConstant implements ErrorFilter {
 
 /// Error filter that routes errors to global handler if no local handler is present.
 /// This is the default error filter for all commands.
-class GlobalErrorFilter implements ErrorFilter {
-  const GlobalErrorFilter();
+class GlobalIfNoLocalErrorFilter implements ErrorFilter {
+  const GlobalIfNoLocalErrorFilter();
   @override
   ErrorReaction filter(Object error, StackTrace stackTrace) {
     return ErrorReaction.firstLocalThenGlobalHandler;
@@ -91,10 +91,10 @@ class LocalAndGlobalErrorFilter implements ErrorFilter {
 }
 
 /// @nodoc
-/// Deprecated: Use [GlobalErrorFilter] instead.
+/// Deprecated: Use [GlobalIfNoLocalErrorFilter] instead.
 /// Will be removed in v10.0.0
 @Deprecated(
-  'Use GlobalErrorFilter instead. '
+  'Use GlobalIfNoLocalErrorFilter instead. '
   'Will be removed in v10.0.0',
 )
 class ErrorHandlerGlobalIfNoLocal implements ErrorFilter {
@@ -102,6 +102,17 @@ class ErrorHandlerGlobalIfNoLocal implements ErrorFilter {
   @override
   ErrorReaction filter(Object error, StackTrace stackTrace) {
     return ErrorReaction.firstLocalThenGlobalHandler;
+  }
+}
+
+/// Error filter that routes errors only to the global handler.
+/// Use this when you want all errors to go to the global handler,
+/// regardless of whether there are local listeners.
+class GlobalErrorFilter implements ErrorFilter {
+  const GlobalErrorFilter();
+  @override
+  ErrorReaction filter(Object error, StackTrace stackTrace) {
+    return ErrorReaction.globalHandler;
   }
 }
 

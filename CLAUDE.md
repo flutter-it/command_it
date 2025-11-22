@@ -133,16 +133,16 @@ Every Command exposes multiple `ValueListenable` interfaces for different aspect
 - `throwIfNoLocalHandler`: Throw if no local listeners
 
 **Built-in ErrorFilter implementations**:
-- `ErrorHandlerGlobalIfNoLocal`: Default behavior
-- `ErrorHandlerLocal`: Local only
-- `ErrorHandlerLocalAndGlobal`: Both handlers
+- `GlobalIfNoLocalErrorFilter`: Default behavior
+- `LocalErrorFilter`: Local only
+- `LocalAndGlobalIfNoLocalErrorFilter`: Both handlers
 - `TableErrorFilter`: Map error types to reactions
 - `PredicatesErrorFilter`: Chain of predicate functions
 - `ErrorFilterExcemption<T>`: Special handling for specific type
 
 **Global configuration**:
 ```dart
-Command.errorFilterDefault = const ErrorHandlerGlobalIfNoLocal();
+Command.errorFilterDefault = const GlobalIfNoLocalErrorFilter();
 Command.globalExceptionHandler = (error, stackTrace) { /* log */ };
 Command.assertionsAlwaysThrow = true; // AssertionErrors bypass filters
 Command.reportAllExceptions = false; // Override filters, report everything

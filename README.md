@@ -159,7 +159,7 @@ Declarative error routing with filters:
 - **[Global Handler](https://flutter-it.dev/documentation/command_it/error_handling#global-handler)** — App-wide error handling
 - **[Global Errors Stream](https://flutter-it.dev/documentation/command_it/global_configuration#globalerrors)** — Reactive monitoring of all globally-routed errors
 - **[Error Filters](https://flutter-it.dev/documentation/command_it/error_filters)** — Route errors by type or predicate
-- **[Built-in Filters](https://flutter-it.dev/documentation/command_it/error_filters#built-in-filters)** — GlobalErrorFilter, PredicatesErrorFilter, etc.
+- **[Built-in Filters](https://flutter-it.dev/documentation/command_it/error_filters#built-in-filters)** — GlobalIfNoLocalErrorFilter, PredicatesErrorFilter, etc.
 
 ### Advanced Features
 

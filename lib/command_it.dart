@@ -554,7 +554,7 @@ abstract class Command<TParam, TResult> extends CustomValueNotifier<TResult> {
 
   /// if no individual ErrorFilter is set when creating a Command
   /// this filter is used in case of an error
-  static ErrorFilter errorFilterDefault = const GlobalErrorFilter();
+  static ErrorFilter errorFilterDefault = const GlobalIfNoLocalErrorFilter();
 
   /// `AssertionErrors` are almost never wanted in production, so by default
   /// they will dirextly be rethrown, so that they are found early in development

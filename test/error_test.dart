@@ -140,8 +140,8 @@ void main() {
     });
 
     // Tests for new ErrorFilter classes
-    test('GlobalErrorFilter', () {
-      const filter = GlobalErrorFilter();
+    test('GlobalIfNoLocalErrorFilter', () {
+      const filter = GlobalIfNoLocalErrorFilter();
 
       expect(
         filter.filter(Error(), StackTrace.current),
@@ -150,6 +150,19 @@ void main() {
       expect(
         filter.filter(Exception(), StackTrace.current),
         ErrorReaction.firstLocalThenGlobalHandler,
+      );
+    });
+
+    test('GlobalErrorFilter', () {
+      const filter = GlobalErrorFilter();
+
+      expect(
+        filter.filter(Error(), StackTrace.current),
+        ErrorReaction.globalHandler,
+      );
+      expect(
+        filter.filter(Exception(), StackTrace.current),
+        ErrorReaction.globalHandler,
       );
     });
 
@@ -708,7 +721,7 @@ void main() {
       final cmd = Command.createAsyncNoParam(
         () async => throw Exception('Test error'),
         initialValue: null,
-        errorFilter: const GlobalErrorFilter(),
+        errorFilter: const GlobalIfNoLocalErrorFilter(),
       );
 
       await cmd.runAsync().catchError((_) {});
@@ -774,7 +787,7 @@ void main() {
       final globalCmd = Command.createAsyncNoParam(
         () async => throw Exception('Global error'),
         initialValue: null,
-        errorFilter: const GlobalErrorFilter(),
+        errorFilter: const GlobalIfNoLocalErrorFilter(),
       );
 
       await globalCmd.runAsync().catchError((_) {});
