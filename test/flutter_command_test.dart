@@ -1375,6 +1375,110 @@ void main() {
 
       expect(find.text('Success!'), findsOneWidget);
     });
+
+    testWidgets('Test CommandBuilder with runCommandOnFirstBuild=false',
+        (WidgetTester tester) async {
+      var executionCount = 0;
+      final testCommand = Command.createAsyncNoParamNoResult(() async {
+        executionCount++;
+        await Future<void>.delayed(const Duration(milliseconds: 100));
+      });
+
+      await tester.pumpWidget(
+        MaterialApp(
+          home: Scaffold(
+            body: CommandBuilder<void, void>(
+              command: testCommand,
+              runCommandOnFirstBuild: false, // Should not run
+              onSuccess: (context, _) => const Text('Success!'),
+              whileRunning: (context, _, __) => const Text('Loading'),
+            ),
+          ),
+        ),
+      );
+
+      await tester.pump();
+
+      // Command should not have executed
+      expect(executionCount, 0);
+      expect(find.text('Loading'), findsNothing);
+    });
+
+    testWidgets(
+        'Test CommandBuilder with runCommandOnFirstBuild=true (no param)',
+        (WidgetTester tester) async {
+      var executionCount = 0;
+      final testCommand = Command.createAsyncNoParamNoResult(() async {
+        executionCount++;
+        await Future<void>.delayed(const Duration(milliseconds: 100));
+      });
+
+      await tester.pumpWidget(
+        MaterialApp(
+          home: Scaffold(
+            body: CommandBuilder<void, void>(
+              command: testCommand,
+              runCommandOnFirstBuild: true,
+              onSuccess: (context, _) => const Text('Success!'),
+              whileRunning: (context, _, __) => const Text('Loading'),
+            ),
+          ),
+        ),
+      );
+
+      // Pump to allow initState to run and command to start
+      await tester.pump(const Duration(milliseconds: 10));
+
+      // Command should have executed once
+      expect(executionCount, 1);
+      expect(find.text('Loading'), findsOneWidget);
+
+      // Wait for command to complete
+      await tester.pump(const Duration(milliseconds: 200));
+
+      expect(find.text('Success!'), findsOneWidget);
+      expect(executionCount, 1); // Should still be 1 (not run again)
+    });
+
+    testWidgets(
+        'Test CommandBuilder with runCommandOnFirstBuild=true and initialParam',
+        (WidgetTester tester) async {
+      String? receivedParam;
+      final testCommand = Command.createAsync<String, String>(
+        (param) async {
+          receivedParam = param;
+          await Future<void>.delayed(const Duration(milliseconds: 100));
+          return 'Result: $param';
+        },
+        initialValue: '', // Named parameter
+      );
+
+      await tester.pumpWidget(
+        MaterialApp(
+          home: Scaffold(
+            body: CommandBuilder<String, String>(
+              command: testCommand,
+              runCommandOnFirstBuild: true,
+              initialParam: 'test-param',
+              onData: (context, data, _) => Text(data),
+              whileRunning: (context, _, __) => const Text('Loading'),
+            ),
+          ),
+        ),
+      );
+
+      // Pump to allow initState to run and command to start
+      await tester.pump(const Duration(milliseconds: 10));
+
+      // Command should have been called with the param
+      expect(receivedParam, 'test-param');
+      expect(find.text('Loading'), findsOneWidget);
+
+      // Wait for command to complete
+      await tester.pump(const Duration(milliseconds: 200));
+
+      expect(find.text('Result: test-param'), findsOneWidget);
+    });
   });
   group('UndoableCommand', () {
     test(

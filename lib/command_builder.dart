@@ -1,6 +1,6 @@
 part of command_it;
 
-class CommandBuilder<TParam, TResult> extends StatelessWidget {
+class CommandBuilder<TParam, TResult> extends StatefulWidget {
   final Command<TParam, TResult> command;
 
   /// This builder will be called when the
@@ -40,6 +40,17 @@ class CommandBuilder<TParam, TResult> extends StatelessWidget {
     TParam?,
   )? onError;
 
+  /// If true, the command will be executed once when the widget is first built.
+  /// This is useful for loading data when the widget is mounted, especially when
+  /// not using watch_it (which provides `callOnce` for this purpose).
+  ///
+  /// The command will only run once in initState, not on subsequent rebuilds.
+  final bool runCommandOnFirstBuild;
+
+  /// The parameter to pass to the command when [runCommandOnFirstBuild] is true.
+  /// Ignored if [runCommandOnFirstBuild] is false.
+  final TParam? initialParam;
+
   const CommandBuilder({
     required this.command,
     this.onSuccess,
@@ -53,41 +64,60 @@ class CommandBuilder<TParam, TResult> extends StatelessWidget {
     )
     this.whileExecuting,
     this.onError,
+    this.runCommandOnFirstBuild = false,
+    this.initialParam,
     super.key,
   });
 
   @override
+  State<CommandBuilder<TParam, TResult>> createState() =>
+      _CommandBuilderState<TParam, TResult>();
+}
+
+class _CommandBuilderState<TParam, TResult>
+    extends State<CommandBuilder<TParam, TResult>> {
+  @override
+  void initState() {
+    super.initState();
+    if (widget.runCommandOnFirstBuild) {
+      widget.command(widget.initialParam);
+    }
+  }
+
+  @override
   Widget build(BuildContext context) {
-    if (command._noReturnValue) {}
+    if (widget.command._noReturnValue) {}
     return ValueListenableBuilder<CommandResult<TParam?, TResult>>(
-      valueListenable: command.results,
+      valueListenable: widget.command.results,
       builder: (context, result, _) {
         return result.toWidget(
-          onData: onData != null
-              ? (data, paramData) => onData!.call(context, data, paramData)
+          onData: widget.onData != null
+              ? (data, paramData) =>
+                  widget.onData!.call(context, data, paramData)
               : null,
-          onSuccess: onSuccess != null
-              ? (paramData) => onSuccess!.call(context, paramData)
+          onSuccess: widget.onSuccess != null
+              ? (paramData) => widget.onSuccess!.call(context, paramData)
               : null,
-          onNullData: onNullData != null
-              ? (paramData) => onNullData!.call(context, paramData)
+          onNullData: widget.onNullData != null
+              ? (paramData) => widget.onNullData!.call(context, paramData)
               : null,
           // ignore: deprecated_member_use_from_same_package
-          whileRunning: (whileRunning ?? whileExecuting) != null
+          whileRunning: (widget.whileRunning ?? widget.whileExecuting) != null
               // ignore: deprecated_member_use_from_same_package
-              ? (lastData, paramData) => (whileRunning ?? whileExecuting)!
-                  .call(context, lastData, paramData)
+              ? (lastData, paramData) =>
+                  (widget.whileRunning ?? widget.whileExecuting)!
+                      .call(context, lastData, paramData)
               : null,
           onError: (error, lastData, paramData) {
-            if (onError == null) {
+            if (widget.onError == null) {
               return const SizedBox();
             }
             assert(
               result.errorReaction?.shouldCallLocalHandler == true,
-              'This CommandBuilder received an error from Command ${command.name} '
+              'This CommandBuilder received an error from Command ${widget.command.name} '
               'but the errorReaction indidates that the error should not be handled locally. ',
             );
-            return onError!.call(context, error, lastData, paramData);
+            return widget.onError!.call(context, error, lastData, paramData);
           },
         );
       },

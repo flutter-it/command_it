@@ -755,6 +755,10 @@ abstract class Command<TParam, TResult> extends CustomValueNotifier<TResult> {
   /// Returns a the result of one of three builders depending on the current state
   /// of the Command. This function won't trigger a rebuild if the command changes states
   /// so it should be used together with get_it_mixin, provider, flutter_hooks and the like.
+  @Deprecated(
+    'Use CommandResult.toWidget() instead. '
+    'This will be removed in v10.0.0.',
+  )
   Widget toWidget({
     required Widget Function(TResult lastResult, TParam? param) onResult,
     Widget Function(TResult lastResult, TParam? param)? whileRunning,

@@ -1,3 +1,49 @@
+[9.2.0] - 2025-11-22
+
+### New Features
+
+- **CommandBuilder Auto-Run**: CommandBuilder now supports automatically executing commands on first build via `runCommandOnFirstBuild` parameter. This is especially useful for non-watch_it users who want self-contained data-loading widgets without needing StatefulWidget boilerplate.
+
+```dart
+CommandBuilder<String, List<Item>>(
+  command: searchCommand,
+  runCommandOnFirstBuild: true,  // Executes in initState
+  initialParam: 'flutter',        // Parameter to pass
+  onData: (context, items, _) => ItemList(items),
+  whileRunning: (context, _, __) => LoadingIndicator(),
+)
+```
+
+**Benefits:**
+- Eliminates StatefulWidget boilerplate for simple data loading
+- Self-contained widgets that manage their own data fetching
+- Runs only once in initState (not on rebuilds)
+- Perfect for non-watch_it users (watch_it users should continue using `callOnce`)
+
+### Deprecations
+
+- **Deprecated Command.toWidget()**: The `Command.toWidget()` method is now deprecated in favor of `CommandResult.toWidget()`. The CommandResult version provides a richer API with better separation of concerns (onData/onSuccess/onNullData) and is already used by CommandBuilder. Command.toWidget() will be removed in v10.0.0.
+
+**Migration:**
+```dart
+// Before (deprecated):
+command.toWidget(
+  onResult: (data, param) => DataWidget(data),
+  whileRunning: (lastData, param) => LoadingWidget(),
+  onError: (error, param) => ErrorWidget(error),
+)
+
+// After (recommended):
+ValueListenableBuilder(
+  valueListenable: command.results,
+  builder: (context, result, _) => result.toWidget(
+    onData: (data, param) => DataWidget(data),
+    whileRunning: (lastData, param) => LoadingWidget(),
+    onError: (error, lastData, param) => ErrorWidget(error),
+  ),
+)
+```
+
 [9.1.1] - 2025-11-21
 
 ### Improvements
