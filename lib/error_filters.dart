@@ -62,6 +62,41 @@ class ErrorFilerConstant implements ErrorFilter {
   ErrorReaction filter(Object error, StackTrace stackTrace) => reaction;
 }
 
+/// Error filter that routes errors to global handler if no local handler is present.
+/// This is the default error filter for all commands.
+class GlobalErrorFilter implements ErrorFilter {
+  const GlobalErrorFilter();
+  @override
+  ErrorReaction filter(Object error, StackTrace stackTrace) {
+    return ErrorReaction.firstLocalThenGlobalHandler;
+  }
+}
+
+/// Error filter that routes errors only to local handlers (.errors or .results listeners).
+class LocalErrorFilter implements ErrorFilter {
+  const LocalErrorFilter();
+  @override
+  ErrorReaction filter(Object error, StackTrace stackTrace) {
+    return ErrorReaction.localHandler;
+  }
+}
+
+/// Error filter that routes errors to both local and global handlers.
+class LocalAndGlobalErrorFilter implements ErrorFilter {
+  const LocalAndGlobalErrorFilter();
+  @override
+  ErrorReaction filter(Object error, StackTrace stackTrace) {
+    return ErrorReaction.localAndGlobalHandler;
+  }
+}
+
+/// @nodoc
+/// Deprecated: Use [GlobalErrorFilter] instead.
+/// Will be removed in v10.0.0
+@Deprecated(
+  'Use GlobalErrorFilter instead. '
+  'Will be removed in v10.0.0',
+)
 class ErrorHandlerGlobalIfNoLocal implements ErrorFilter {
   const ErrorHandlerGlobalIfNoLocal();
   @override
@@ -70,6 +105,13 @@ class ErrorHandlerGlobalIfNoLocal implements ErrorFilter {
   }
 }
 
+/// @nodoc
+/// Deprecated: Use [LocalErrorFilter] instead.
+/// Will be removed in v10.0.0
+@Deprecated(
+  'Use LocalErrorFilter instead. '
+  'Will be removed in v10.0.0',
+)
 class ErrorHandlerLocal implements ErrorFilter {
   const ErrorHandlerLocal();
   @override
@@ -78,6 +120,13 @@ class ErrorHandlerLocal implements ErrorFilter {
   }
 }
 
+/// @nodoc
+/// Deprecated: Use [LocalAndGlobalErrorFilter] instead.
+/// Will be removed in v10.0.0
+@Deprecated(
+  'Use LocalAndGlobalErrorFilter instead. '
+  'Will be removed in v10.0.0',
+)
 class ErrorHandlerLocalAndGlobal implements ErrorFilter {
   const ErrorHandlerLocalAndGlobal();
   @override

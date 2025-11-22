@@ -7,6 +7,8 @@ analyzer:
     - example/**
     - example_command_results/**
     - counter_example/**
+  errors:
+    deprecated_member_use_from_same_package: ignore
     
 linter:
   rules:

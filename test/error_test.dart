@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:command_it/command_it.dart';
 import 'package:test/test.dart';
 
@@ -126,6 +128,46 @@ void main() {
     });
     test('ErrorHandlerLocalAndGlobal', () {
       const filter = ErrorHandlerLocalAndGlobal();
+
+      expect(
+        filter.filter(Error(), StackTrace.current),
+        ErrorReaction.localAndGlobalHandler,
+      );
+      expect(
+        filter.filter(Exception(), StackTrace.current),
+        ErrorReaction.localAndGlobalHandler,
+      );
+    });
+
+    // Tests for new ErrorFilter classes
+    test('GlobalErrorFilter', () {
+      const filter = GlobalErrorFilter();
+
+      expect(
+        filter.filter(Error(), StackTrace.current),
+        ErrorReaction.firstLocalThenGlobalHandler,
+      );
+      expect(
+        filter.filter(Exception(), StackTrace.current),
+        ErrorReaction.firstLocalThenGlobalHandler,
+      );
+    });
+
+    test('LocalErrorFilter', () {
+      const filter = LocalErrorFilter();
+
+      expect(
+        filter.filter(Error(), StackTrace.current),
+        ErrorReaction.localHandler,
+      );
+      expect(
+        filter.filter(Exception(), StackTrace.current),
+        ErrorReaction.localHandler,
+      );
+    });
+
+    test('LocalAndGlobalErrorFilter', () {
+      const filter = LocalAndGlobalErrorFilter();
 
       expect(
         filter.filter(Error(), StackTrace.current),
@@ -642,6 +684,102 @@ void main() {
       expect(filter, isNotNull);
       expect(filter.filter(Exception('test'), StackTrace.current),
           ErrorReaction.localHandler);
+    });
+  });
+
+  group('Global errors stream', () {
+    late List<CommandError<dynamic>> errors;
+    late StreamSubscription<CommandError<dynamic>> subscription;
+
+    setUp(() {
+      errors = <CommandError<dynamic>>[];
+      subscription = Command.globalErrors.listen((e) => errors.add(e));
+      // Set a global handler so assertions don't fail
+      Command.globalExceptionHandler = (_, __) {};
+    });
+
+    tearDown(() async {
+      await subscription.cancel();
+      errors.clear();
+      Command.globalExceptionHandler = null;
+    });
+
+    test('Stream emits when ErrorFilter routes to global', () async {
+      final cmd = Command.createAsyncNoParam(
+        () async => throw Exception('Test error'),
+        initialValue: null,
+        errorFilter: const GlobalErrorFilter(),
+      );
+
+      await cmd.runAsync().catchError((_) {});
+
+      expect(errors, hasLength(1));
+      expect(errors.first.error.toString(), contains('Test error'));
+      expect(errors.first.command, equals(cmd));
+      expect(errors.first.stackTrace, isNotNull);
+    });
+
+    test('Stream does NOT emit for reportAllExceptions', () async {
+      Command.reportAllExceptions = true;
+
+      final cmd = Command.createAsyncNoParam(
+        () async => throw Exception('Debug error'),
+        initialValue: null,
+        errorFilter: const LocalErrorFilter(),
+      );
+      cmd.errors.listen((_, __) {}); // Add local listener
+
+      await cmd.runAsync().catchError((_) {});
+
+      expect(errors, isEmpty); // Should NOT emit to stream
+
+      Command.reportAllExceptions = false;
+    });
+
+    test('Stream emits when error handler throws', () async {
+      Command.reportErrorHandlerExceptionsToGlobalHandler = true;
+
+      final cmd = Command.createAsyncNoParam(
+        () async => throw Exception('Original error'),
+        initialValue: null,
+      );
+
+      // Error handler that throws
+      cmd.errors.listen((error, _) {
+        if (error != null) {
+          throw Exception('Error handler bug!');
+        }
+      });
+
+      await cmd.runAsync().catchError((_) {});
+
+      expect(errors, hasLength(1));
+      expect(errors.first.error.toString(), contains('Error handler bug'));
+      expect(errors.first.originalError, isNotNull);
+    });
+
+    test('Stream only emits for global routing, not local', () async {
+      // Local filter - should NOT emit
+      final localCmd = Command.createAsyncNoParam(
+        () async => throw Exception('Local error'),
+        initialValue: null,
+        errorFilter: const LocalErrorFilter(),
+      );
+      localCmd.errors.listen((_, __) {});
+
+      await localCmd.runAsync().catchError((_) {});
+      expect(errors, isEmpty);
+
+      // Global filter - SHOULD emit
+      final globalCmd = Command.createAsyncNoParam(
+        () async => throw Exception('Global error'),
+        initialValue: null,
+        errorFilter: const GlobalErrorFilter(),
+      );
+
+      await globalCmd.runAsync().catchError((_) {});
+      expect(errors, hasLength(1));
+      expect(errors.first.error.toString(), contains('Global error'));
     });
   });
 }

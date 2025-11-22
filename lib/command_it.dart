@@ -264,7 +264,7 @@ abstract class Command<TParam, TResult> extends CustomValueNotifier<TResult> {
       _errors.notifyListeners(
         reportErrorHandlerExceptionsToGlobalHandler
             ? (error, stackTrace) => {
-                  globalExceptionHandler?.call(
+                  _internalGlobalErrorHandler(
                     CommandError<TParam>(
                       error: error,
                       command: this,
@@ -554,7 +554,7 @@ abstract class Command<TParam, TResult> extends CustomValueNotifier<TResult> {
 
   /// if no individual ErrorFilter is set when creating a Command
   /// this filter is used in case of an error
-  static ErrorFilter errorFilterDefault = const ErrorHandlerGlobalIfNoLocal();
+  static ErrorFilter errorFilterDefault = const GlobalErrorFilter();
 
   /// `AssertionErrors` are almost never wanted in production, so by default
   /// they will dirextly be rethrown, so that they are found early in development
@@ -600,6 +600,54 @@ abstract class Command<TParam, TResult> extends CustomValueNotifier<TResult> {
     String? commandName,
     CommandResult<dynamic, dynamic> result,
   )? loggingHandler;
+
+  static final StreamController<CommandError<dynamic>> _globalErrorStream =
+      StreamController<CommandError<dynamic>>.broadcast();
+
+  /// Stream of all command errors across the entire application.
+  /// Emits whenever any command encounters an error that would trigger
+  /// the [globalExceptionHandler] (based on ErrorFilter routing).
+  ///
+  /// Does NOT emit errors from [reportAllExceptions] (debug-only).
+  ///
+  /// Useful for:
+  /// - Centralized logging
+  /// - Analytics/monitoring
+  /// - Crash reporting
+  /// - UI notifications (error toasts via watch_it's registerStreamHandler)
+  ///
+  /// Example with watch_it integration:
+  /// ```dart
+  /// class MyApp extends WatchingWidget {
+  ///   @override
+  ///   Widget build(BuildContext context) {
+  ///     registerStreamHandler<Stream<CommandError>, CommandError>(
+  ///       target: Command.globalErrors,
+  ///       handler: (context, snapshot, cancel) {
+  ///         if (snapshot.hasData) {
+  ///           final error = snapshot.data!;
+  ///           ScaffoldMessenger.of(context).showSnackBar(
+  ///             SnackBar(content: Text('Error: ${error.error}')),
+  ///           );
+  ///         }
+  ///       },
+  ///     );
+  ///     return MaterialApp(...);
+  ///   }
+  /// }
+  /// ```
+  static Stream<CommandError<dynamic>> get globalErrors =>
+      _globalErrorStream.stream;
+
+  /// Internal handler that emits to stream and calls public globalExceptionHandler.
+  /// Used for errors that should be globally handled (not debug-only).
+  static void _internalGlobalErrorHandler(
+    CommandError<dynamic> error,
+    StackTrace stackTrace,
+  ) {
+    _globalErrorStream.add(error);
+    globalExceptionHandler?.call(error, stackTrace);
+  }
 
   /// as we don't want that anyone changes the values of these ValueNotifiers
   /// properties we make them private and only publish their `ValueListenable`
@@ -830,7 +878,7 @@ abstract class Command<TParam, TResult> extends CustomValueNotifier<TResult> {
       );
     }
     if (callGlobal) {
-      globalExceptionHandler?.call(
+      _internalGlobalErrorHandler(
         CommandError(
           paramData: param,
           error: error,

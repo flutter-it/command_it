@@ -1,3 +1,71 @@
+[9.1.0] - 2025-11-21
+
+### New Features
+
+- **Global errors stream**: Added `Command.globalErrors` stream that emits all command errors across the entire application. This provides a centralized way to observe, log, and respond to command errors without polling individual commands.
+
+**Key capabilities:**
+- **Reactive error monitoring**: Stream emits `CommandError<dynamic>` for every globally-routed error
+- **Production-focused**: Emits for ErrorFilter-routed errors and error handler exceptions, does NOT emit debug-only `reportAllExceptions`
+- **Use cases**: Centralized logging, analytics/monitoring, crash reporting, global UI notifications (error toasts)
+- **watch_it integration**: Perfect for `registerStreamHandler` to show error toasts in root widget
+
+**Example - Global error toast with watch_it:**
+```dart
+class MyApp extends WatchingWidget {
+  @override
+  Widget build(BuildContext context) {
+    registerStreamHandler<Stream<CommandError>, CommandError>(
+      target: Command.globalErrors,
+      handler: (context, snapshot, cancel) {
+        if (snapshot.hasData) {
+          final error = snapshot.data!;
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(content: Text('Error: ${error.error}')),
+          );
+        }
+      },
+    );
+    return MaterialApp(...);
+  }
+}
+```
+
+**Stream behavior:**
+- ✅ Emits when `ErrorFilter` routes error to global handler
+- ✅ Emits when error handler itself throws (if `reportErrorHandlerExceptionsToGlobalHandler` enabled)
+- ❌ Does NOT emit for `reportAllExceptions` (debug-only feature)
+- Multiple listeners supported (broadcast stream)
+- Cannot be closed
+
+[9.0.3] - TBD
+
+### Improvements
+
+- **Improved ErrorFilter class naming consistency**: Renamed `ErrorHandler*` classes to simpler `*ErrorFilter` pattern to better align with existing filters. Old names remain functional with deprecation warnings until v10.0.0.
+
+**Class name changes:**
+- `ErrorHandlerGlobalIfNoLocal` → `GlobalErrorFilter` (deprecated)
+- `ErrorHandlerLocal` → `LocalErrorFilter` (deprecated)
+- `ErrorHandlerLocalAndGlobal` → `LocalAndGlobalErrorFilter` (deprecated)
+
+**Why this change:**
+- Better naming consistency: matches `TableErrorFilter` and `PredicatesErrorFilter` pattern
+- Simpler and clearer: `LocalErrorFilter` vs `LocalHandlingFilter`
+- All filter implementations now end with `*ErrorFilter`
+
+**Migration:**
+No action required - old names still work with deprecation warnings. Update at your convenience:
+```dart
+// Old (still works)
+Command.errorFilterDefault = const ErrorHandlerGlobalIfNoLocal();
+errorFilter: const ErrorHandlerLocal()
+
+// New
+Command.errorFilterDefault = const GlobalErrorFilter();
+errorFilter: const LocalErrorFilter()
+```
+
 [9.0.2] - 2025-11-15
 
 ### Fixes
