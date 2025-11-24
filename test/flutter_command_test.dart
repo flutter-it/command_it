@@ -1950,6 +1950,150 @@ void main() {
       expect(pureResultCollector.values, ['Result']);
       // expect(isExecutingCollector.values, [true, false]);
     });
+
+    // New tests for "run" terminology API
+    test('Test MockCommand - startRun (new API)', () {
+      final mockCommand = MockCommand<String, String>(
+        initialValue: 'Initial Value',
+      );
+
+      setupCollectors(mockCommand);
+
+      // Use new startRun method
+      mockCommand.startRun('Test Param');
+
+      expect(cmdResultCollector.values, [
+        const CommandResult<String, String>('Test Param', null, null, true),
+      ]);
+      expect(mockCommand.isRunning.value, true);
+      expect(mockCommand.lastPassedValueToRun, 'Test Param');
+    });
+
+    test('Test MockCommand - endRunWithData (new API)', () {
+      final mockCommand = MockCommand<String, String>(
+        initialValue: 'Initial Value',
+      );
+
+      setupCollectors(mockCommand);
+
+      mockCommand.startRun('Test Param');
+      // Use new endRunWithData method
+      mockCommand.endRunWithData('New Result');
+
+      expect(cmdResultCollector.values, [
+        const CommandResult<String, String>('Test Param', null, null, true),
+        const CommandResult<String, String>(
+            'Test Param', 'New Result', null, false),
+      ]);
+      expect(mockCommand.value, 'New Result');
+      expect(mockCommand.isRunning.value, false);
+    });
+
+    test('Test MockCommand - endRunNoData (new API)', () {
+      final mockCommand = MockCommand<String, String>(
+        initialValue: 'Initial Value',
+        noReturnValue: true,
+      );
+
+      setupCollectors(mockCommand);
+
+      mockCommand.startRun('Test Param');
+      // Use new endRunNoData method
+      mockCommand.endRunNoData();
+
+      expect(cmdResultCollector.values, [
+        const CommandResult<String, String>('Test Param', null, null, true),
+        const CommandResult<String, String>('Test Param', null, null, false),
+      ]);
+      expect(mockCommand.isRunning.value, false);
+    });
+
+    test('Test MockCommand - endRunWithError (new API)', () {
+      final mockCommand = MockCommand<String, String>(
+        initialValue: 'Initial Value',
+        restriction: ValueNotifier<bool>(false),
+        name: 'MockingJay',
+      );
+      expect(mockCommand.canRun.value, true);
+      setupCollectors(mockCommand);
+
+      // Use new endRunWithError method
+      mockCommand.endRunWithError('Test Mock Error');
+
+      // verify error was captured
+      expect(
+        mockCommand.results.value.error.toString(),
+        'Exception: Test Mock Error',
+      );
+      expect(mockCommand.isRunning.value, false);
+      expect(pureResultCollector.values, isNull);
+    });
+
+    test('Test MockCommand - queueResultsForNextRunCall (new API)', () {
+      final mockCommand = MockCommand<String, String>(
+        initialValue: 'Initial Value',
+        restriction: ValueNotifier<bool>(false),
+        name: 'MockingJay',
+      );
+      // Use new queueResultsForNextRunCall method
+      mockCommand.queueResultsForNextRunCall([
+        const CommandResult<String, String>('Param', null, null, true),
+        const CommandResult<String, String>('Param', 'Result', null, false),
+      ]);
+      expect(mockCommand.canRun.value, true);
+      setupCollectors(mockCommand);
+
+      mockCommand.run();
+
+      expect(cmdResultCollector.values, [
+        const CommandResult<String, String>('Param', null, null, true),
+        const CommandResult<String, String>('Param', 'Result', null, false),
+      ]);
+      expect(pureResultCollector.values, ['Result']);
+    });
+
+    test('Test MockCommand - runCount property (new API)', () {
+      final mockCommand = MockCommand<String, String>(
+        initialValue: 'Initial Value',
+      );
+
+      expect(mockCommand.runCount, 0);
+
+      mockCommand.run('First');
+      expect(mockCommand.runCount, 1);
+
+      mockCommand.run('Second');
+      expect(mockCommand.runCount, 2);
+    });
+
+    test('Test MockCommand - lastPassedValueToRun property (new API)', () {
+      final mockCommand = MockCommand<String, String>(
+        initialValue: 'Initial Value',
+      );
+
+      expect(mockCommand.lastPassedValueToRun, null);
+
+      mockCommand.startRun('Test Value');
+      expect(mockCommand.lastPassedValueToRun, 'Test Value');
+
+      mockCommand.startRun('Another Value');
+      expect(mockCommand.lastPassedValueToRun, 'Another Value');
+    });
+
+    test('Test MockCommand - returnValuesForNextRun property (new API)', () {
+      final mockCommand = MockCommand<String, String>(
+        initialValue: 'Initial Value',
+      );
+
+      expect(mockCommand.returnValuesForNextRun, null);
+
+      final queuedResults = [
+        const CommandResult<String, String>('Param', 'Result', null, false),
+      ];
+      mockCommand.queueResultsForNextRunCall(queuedResults);
+
+      expect(mockCommand.returnValuesForNextRun, queuedResults);
+    });
   });
 
   group('ExecuteWithFuture Edge Cases', () {

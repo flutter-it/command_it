@@ -129,21 +129,76 @@ These are internal and don't affect public API:
 
 ---
 
+## MockCommand API Update (v9.3.0)
+
+**Status**: ✅ Implemented in v9.3.0 (January 2025)
+
+MockCommand was updated to match the Command API terminology migration. All "execute" terminology in MockCommand has been renamed to "run" with the same deprecation pattern.
+
+### MockCommand Methods
+
+| Old API (Deprecated) | New API | Purpose |
+|---------------------|---------|---------|
+| `startExecution([TParam? param])` | `startRun([TParam? param])` | Start simulated command execution |
+| `endExecutionWithData(TResult data)` | `endRunWithData(TResult data)` | End execution with success data |
+| `endExecutionWithError(String message)` | `endRunWithError(String message)` | End execution with error |
+| `endExecutionNoData()` | `endRunNoData()` | End execution without data |
+| `queueResultsForNextExecuteCall(values)` | `queueResultsForNextRunCall(values)` | Queue results for next run |
+
+### MockCommand Properties
+
+| Old API (Deprecated) | New API | Purpose |
+|---------------------|---------|---------|
+| `executionCount` | `runCount` | Number of times command was called |
+| `lastPassedValueToExecute` | `lastPassedValueToRun` | Last parameter passed to command |
+| `returnValuesForNextExecute` | `returnValuesForNextRun` | Queued results for next call |
+
+### Migration Example
+
+**Before (deprecated):**
+```dart
+final mockCommand = MockCommand<String, String>(initialValue: '');
+
+mockCommand.startExecution('test');
+mockCommand.endExecutionWithData('result');
+expect(mockCommand.executionCount, 1);
+expect(mockCommand.lastPassedValueToExecute, 'test');
+```
+
+**After (v9.3.0+):**
+```dart
+final mockCommand = MockCommand<String, String>(initialValue: '');
+
+mockCommand.startRun('test');
+mockCommand.endRunWithData('result');
+expect(mockCommand.runCount, 1);
+expect(mockCommand.lastPassedValueToRun, 'test');
+```
+
+### Deprecation Notes
+
+- All old "execute" terminology methods and properties still work with deprecation warnings
+- Will be removed in v10.0.0 (same timeline as Command API)
+- Automated search/replace patterns from the main migration guide work for MockCommand too
+- Both old and new APIs are fully tested for backward compatibility
+
+---
+
 ## Impact Analysis
 
 ### Affected Code Locations
 
-**Core Library (`lib/`):** ~140 occurrences
+**Core Library (`lib/`):** ~140 occurrences (v9.0.0) + 30 occurrences (v9.3.0 MockCommand)
 - `lib/command_it.dart` - Command base class (~30 occurrences)
 - `lib/async_command.dart` - Async implementation (~25 occurrences)
 - `lib/sync_command.dart` - Sync implementation (~20 occurrences)
 - `lib/undoable_command.dart` - Undoable implementation (~35 occurrences)
-- `lib/mock_command.dart` - Mock implementation (~15 occurrences)
+- `lib/mock_command.dart` - Mock implementation (~15 occurrences in v9.0.0, +30 in v9.3.0 for MockCommand-specific API)
 - `lib/command_builder.dart` - Widget builder (~10 occurrences)
 - `lib/code_for_docs.dart` - Documentation examples (~5 occurrences)
 
-**Tests (`test/`):** ~56 occurrences
-- `test/flutter_command_test.dart` - Main test suite (~33 occurrences)
+**Tests (`test/`):** ~56 occurrences (v9.0.0) + 8 new tests (v9.3.0 MockCommand)
+- `test/flutter_command_test.dart` - Main test suite (~33 occurrences in v9.0.0, +8 new tests in v9.3.0 for MockCommand API)
 - `test/error_test.dart` - Error handling tests (~21 occurrences)
 - `test/callable_assignment_test.dart` - Callable class tests (~2 occurrences)
 
@@ -209,14 +264,32 @@ isExecuting:     → isRunning:
 .isExecuting     → .isRunning
 ```
 
-**Step 2: Manual review**
+**Step 2: MockCommand migration (if using MockCommand)**
+
+MockCommand users should also apply these replacements:
+
+```
+# MockCommand methods
+.startExecution(      → .startRun(
+.endExecutionWithData(  → .endRunWithData(
+.endExecutionWithError( → .endRunWithError(
+.endExecutionNoData(  → .endRunNoData(
+.queueResultsForNextExecuteCall( → .queueResultsForNextRunCall(
+
+# MockCommand properties
+.executionCount       → .runCount
+.lastPassedValueToExecute → .lastPassedValueToRun
+.returnValuesForNextExecute → .returnValuesForNextRun
+```
+
+**Step 3: Manual review**
 
 Check these edge cases:
 - String literals containing "execute" (e.g., log messages)
 - Comments and documentation
 - Variable names like `shouldExecute` → consider renaming
 
-**Step 3: Test and verify**
+**Step 4: Test and verify**
 
 ```bash
 flutter analyze
@@ -432,6 +505,8 @@ for migration guide. (deprecated_member_use)
 | November 2025 | v8.0.3 | Document implicit call tear-off issue |
 | November 2025 | v8.1.0 | Hybrid error filtering + other features |
 | November 2025 | **v9.0.0** | **Add "run" API, deprecate "execute" API** |
+| November 2025 | v9.2.0 | CommandBuilder auto-run + Command.toWidget deprecation |
+| January 2025 | **v9.3.0** | **MockCommand "run" API migration** |
 | Nov 2025 - May 2026 | v9.x | Bug fixes, ecosystem migration period |
 | May-June 2026 | **v10.0.0** | **Remove deprecated "execute" API** |
 
@@ -613,14 +688,52 @@ const CommandResult({
 - [ ] Verify backward compatibility (old code still works)
 - [ ] Update pub.dev package description
 
+### Phase 1.5: v9.3.0 MockCommand Implementation
+
+**MockCommand Library:**
+- [x] Add `startRun()` method alongside deprecated `startExecution()`
+- [x] Add `endRunWithData()` method alongside deprecated `endExecutionWithData()`
+- [x] Add `endRunWithError()` method alongside deprecated `endExecutionWithError()`
+- [x] Add `endRunNoData()` method alongside deprecated `endExecutionNoData()`
+- [x] Add `queueResultsForNextRunCall()` method alongside deprecated `queueResultsForNextExecuteCall()`
+- [x] Add `runCount` property alongside deprecated `executionCount`
+- [x] Add `lastPassedValueToRun` property alongside deprecated `lastPassedValueToExecute`
+- [x] Add `returnValuesForNextRun` property alongside deprecated `returnValuesForNextExecute`
+- [x] Add `@Deprecated` annotations to all old MockCommand APIs
+- [x] Update internal references to use new field names
+
+**Tests:**
+- [x] Add 8 new tests for MockCommand "run" API
+- [x] Verify all existing MockCommand tests still pass with old API
+- [x] Test backward compatibility (both APIs work)
+
+**Documentation:**
+- [x] Update BREAKING_CHANGE_EXECUTE_TO_RUN.md with MockCommand section
+- [x] Update CHANGELOG.md with v9.3.0 entry
+- [x] Update pubspec.yaml to v9.3.0
+- [ ] Update docs/testing.md with new MockCommand API examples
+- [ ] Update code samples to use new MockCommand API
+
+**Quality:**
+- [x] Run MockCommand tests
+- [x] Verify compilation (no errors)
+- [x] Format code with dart format
+
 ### Phase 2: v10.0.0 Implementation
 
+**Command API Removal:**
 - [ ] Remove all `@Deprecated` execute* methods
 - [ ] Remove all `@Deprecated` isExecuting/canExecute properties
 - [ ] Remove deprecated CommandResult.isExecuting getter
 - [ ] Remove deprecated parameter names
+
+**MockCommand API Removal:**
+- [ ] Remove all `@Deprecated` MockCommand execute* methods (startExecution, endExecutionWithData, etc.)
+- [ ] Remove all `@Deprecated` MockCommand properties (executionCount, lastPassedValueToExecute, returnValuesForNextExecute)
+
+**Final Steps:**
 - [ ] Update CHANGELOG with final breaking change notice
-- [ ] Verify no references to old API remain
+- [ ] Verify no references to old API remain (including MockCommand)
 - [ ] Run full test suite
 - [ ] Update semantic version to 10.0.0
 

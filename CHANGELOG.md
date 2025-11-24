@@ -1,3 +1,23 @@
+[9.3.0] - 2025-01-23
+
+### Added
+
+- **MockCommand "run" Terminology**: MockCommand now uses "run" terminology to match the Command API migration from v9.0.0:
+  - `startRun()` - replaces `startExecution()`
+  - `endRunWithData()` - replaces `endExecutionWithData()`
+  - `endRunWithError()` - replaces `endExecutionWithError()`
+  - `endRunNoData()` - replaces `endExecutionNoData()`
+  - `queueResultsForNextRunCall()` - replaces `queueResultsForNextExecuteCall()`
+  - `runCount` property - replaces `executionCount`
+  - `lastPassedValueToRun` property - replaces `lastPassedValueToExecute`
+  - `returnValuesForNextRun` property - replaces `returnValuesForNextExecute`
+
+### Deprecated
+
+- **Old MockCommand "execute" Terminology**: All "execute" terminology methods and properties in MockCommand are now deprecated
+- Will be removed in v10.0.0
+- See `BREAKING_CHANGE_EXECUTE_TO_RUN.md` for migration guide
+
 [9.2.0] - 2025-11-22
 
 ### New Features
