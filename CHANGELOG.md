@@ -9,7 +9,9 @@
   - Implementation uses wrapper functions in WithProgress factories to call `reset()` automatically
 
 **New Methods**:
-- `Command.resetProgress()` - Manually reset progress state (useful for clearing 100% progress from UI)
+- `Command.resetProgress({double? progress, String? statusMessage})` - Manually reset/initialize progress state
+  - Without parameters: resets to defaults (0.0, null)
+  - With parameters: initializes to specific values (useful for resuming operations)
 
 **Technical Details**:
 - Added `ProgressHandle.reset()` method to clear all state back to initial values

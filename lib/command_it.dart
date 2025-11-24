@@ -624,11 +624,21 @@ abstract class Command<TParam, TResult> extends CustomValueNotifier<TResult> {
   /// Clears progress (to 0.0), statusMessage (to null), and isCanceled (to false).
   /// This is called automatically at the start of each execution, but can also
   /// be called manually when needed (e.g., to clear 100% progress from UI after
-  /// completion).
+  /// completion, or to initialize a command to a specific progress value).
+  ///
+  /// Optional parameters allow setting specific initial values:
+  /// - [progress]: Initial progress value (0.0-1.0), defaults to 0.0
+  /// - [statusMessage]: Initial status message, defaults to null
   ///
   /// Example:
   /// ```dart
-  /// // After successful completion, reset progress for next run
+  /// // Reset to default (0.0, null)
+  /// command.resetProgress();
+  ///
+  /// // Initialize to 50% with a message
+  /// command.resetProgress(progress: 0.5, statusMessage: 'Resuming...');
+  ///
+  /// // Clear 100% progress after completion
   /// if (command.progress.value == 1.0) {
   ///   await Future.delayed(Duration(seconds: 2));
   ///   command.resetProgress();
@@ -636,7 +646,8 @@ abstract class Command<TParam, TResult> extends CustomValueNotifier<TResult> {
   /// ```
   ///
   /// For commands without progress (created with regular factories), this is a no-op.
-  void resetProgress() => _handle?.reset();
+  void resetProgress({double? progress, String? statusMessage}) =>
+      _handle?.reset(progress: progress, statusMessage: statusMessage);
 
   /// optional hander that will get called on any exception that happens inside
   /// any Command of the app. Ideal for logging.

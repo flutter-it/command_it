@@ -93,15 +93,18 @@ class ProgressHandle {
   ///
   /// Called automatically at the start of each command execution.
   /// Resets:
-  /// - [progress] to 0.0
-  /// - [statusMessage] to null
+  /// - [progress] to 0.0 (or specified value)
+  /// - [statusMessage] to null (or specified value)
   /// - [isCanceled] to false
+  ///
+  /// Optional parameters allow initializing to specific values instead
+  /// of defaults, useful for starting commands at a non-zero progress.
   ///
   /// This ensures each command execution starts with clean state,
   /// especially important for the cancellation flag.
-  void reset() {
-    _progress.value = 0.0;
-    _statusMessage.value = null;
+  void reset({double? progress, String? statusMessage}) {
+    _progress.value = progress ?? 0.0;
+    _statusMessage.value = statusMessage;
     _isCanceled.value = false;
   }
 
