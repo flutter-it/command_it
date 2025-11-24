@@ -64,6 +64,7 @@ class MockCommand<TParam, TResult> extends Command<TParam, TResult> {
 
   /// constructor that can take an optional `ValueListenable` to control if the command can be run
   /// if the wrapped function has `void` as return type [noResult] has to be `true`
+  /// [withProgressHandle] if `true` creates a [ProgressHandle] to enable progress simulation in tests
   MockCommand({
     required super.initialValue,
     super.noParamValue = false,
@@ -81,10 +82,16 @@ class MockCommand<TParam, TResult> extends Command<TParam, TResult> {
     super.errorFilterFn,
     super.notifyOnlyWhenValueChanges = false,
     super.name,
+    bool withProgressHandle = false,
   }) {
     _commandResult
         .where((result) => result.hasData)
         .listen((result, _) => value = result.data!);
+
+    // Create ProgressHandle if requested for testing progress-aware commands
+    if (withProgressHandle) {
+      _handle = ProgressHandle();
+    }
   }
 
   /// Deprecated: Use [queueResultsForNextRunCall] instead.
@@ -270,6 +277,69 @@ class MockCommand<TParam, TResult> extends Command<TParam, TResult> {
     List<CommandResult<TParam, TResult>> values,
   ) {
     returnValuesForNextRun = values;
+  }
+
+  /// Simulates a progress update for testing progress-aware commands.
+  ///
+  /// Requires the MockCommand to be created with `withProgressHandle: true`.
+  ///
+  /// Example:
+  /// ```dart
+  /// final mockCommand = MockCommand<int, String>(
+  ///   initialValue: '',
+  ///   withProgressHandle: true,
+  /// );
+  /// mockCommand.updateMockProgress(0.5);
+  /// expect(mockCommand.progress.value, 0.5);
+  /// ```
+  void updateMockProgress(double value) {
+    assert(
+      _handle != null,
+      'MockCommand must be created with withProgressHandle: true to simulate progress updates',
+    );
+    _handle!.updateProgress(value);
+  }
+
+  /// Simulates a status message update for testing progress-aware commands.
+  ///
+  /// Requires the MockCommand to be created with `withProgressHandle: true`.
+  ///
+  /// Example:
+  /// ```dart
+  /// final mockCommand = MockCommand<int, String>(
+  ///   initialValue: '',
+  ///   withProgressHandle: true,
+  /// );
+  /// mockCommand.updateMockStatusMessage('Processing...');
+  /// expect(mockCommand.statusMessage.value, 'Processing...');
+  /// ```
+  void updateMockStatusMessage(String? message) {
+    assert(
+      _handle != null,
+      'MockCommand must be created with withProgressHandle: true to simulate status message updates',
+    );
+    _handle!.updateStatusMessage(message);
+  }
+
+  /// Simulates cancellation for testing progress-aware commands.
+  ///
+  /// Requires the MockCommand to be created with `withProgressHandle: true`.
+  ///
+  /// Example:
+  /// ```dart
+  /// final mockCommand = MockCommand<int, String>(
+  ///   initialValue: '',
+  ///   withProgressHandle: true,
+  /// );
+  /// mockCommand.mockCancel();
+  /// expect(mockCommand.isCanceled.value, true);
+  /// ```
+  void mockCancel() {
+    assert(
+      _handle != null,
+      'MockCommand must be created with withProgressHandle: true to simulate cancellation',
+    );
+    _handle!.cancel();
   }
 
   @override

@@ -1,3 +1,59 @@
+[9.4.0] - 2024-11-24
+
+### New Features
+
+- **Progress Control**: Commands now support built-in progress tracking, status messages, and cooperative cancellation through the new `ProgressHandle` class.
+
+**New Factory Methods** (8 variants):
+- `Command.createAsyncWithProgress<TParam, TResult>()` - Async command with progress tracking
+- `Command.createAsyncNoParamWithProgress<TResult>()` - No-param async with progress
+- `Command.createAsyncNoResultWithProgress<TParam>()` - Void-return async with progress
+- `Command.createAsyncNoParamNoResultWithProgress()` - No-param, void-return async with progress
+- `Command.createUndoableWithProgress<TParam, TResult, TUndoState>()` - Undoable with progress
+- `Command.createUndoableNoParamWithProgress<TResult, TUndoState>()` - No-param undoable with progress
+- `Command.createUndoableNoResultWithProgress<TParam, TUndoState>()` - Void-return undoable with progress
+- `Command.createUndoableNoParamNoResultWithProgress<TUndoState>()` - No-param, void-return undoable with progress
+
+**New Command Properties**:
+- `progress` - Observable progress value (0.0-1.0) via `ValueListenable<double>`
+- `statusMessage` - Observable status text via `ValueListenable<String?>`
+- `isCanceled` - Observable cancellation flag via `ValueListenable<bool>`
+- `cancel()` - Request cooperative cancellation
+
+**MockCommand Progress Support**:
+- `withProgressHandle` constructor parameter to enable progress simulation
+- `updateMockProgress(double)` - Simulate progress updates in tests
+- `updateMockStatusMessage(String?)` - Simulate status message updates
+- `mockCancel()` - Simulate cancellation
+
+**Example Usage**:
+```dart
+final uploadCommand = Command.createAsyncWithProgress<File, String>(
+  (file, handle) async {
+    for (int i = 0; i <= 100; i += 10) {
+      if (handle.isCanceled.value) return 'Canceled';
+
+      await uploadChunk(file, i);
+      handle.updateProgress(i / 100.0);
+      handle.updateStatusMessage('Uploading: $i%');
+    }
+    return 'Complete';
+  },
+  initialValue: '',
+);
+
+// In UI:
+watchValue((MyService s) => s.uploadCommand.progress)  // 0.0 to 1.0
+watchValue((MyService s) => s.uploadCommand.statusMessage)  // Status text
+uploadCommand.cancel();  // Request cancellation
+```
+
+**Benefits**:
+- Zero-overhead: Commands without progress use static default notifiers (no memory cost)
+- Type-safe: Progress properties available on all commands via non-nullable API
+- Cooperative cancellation: Works with external cancellation tokens (e.g., Dio's CancelToken)
+- Test-friendly: MockCommand supports full progress simulation
+
 [9.3.0] - 2025-01-23
 
 ### Added

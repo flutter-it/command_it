@@ -17,6 +17,7 @@ export 'package:listen_it/listen_it.dart';
 part './async_command.dart';
 part './command_builder.dart';
 part './mock_command.dart';
+part './progress_handle.dart';
 part './sync_command.dart';
 part './undoable_command.dart';
 
@@ -545,6 +546,79 @@ abstract class Command<TParam, TResult> extends CustomValueNotifier<TResult> {
     _errors.notifyListeners();
   }
 
+  /// Observable progress value between 0.0 (0%) and 1.0 (100%).
+  ///
+  /// For commands created with `WithProgress` factories, returns the actual
+  /// progress notifier from the [ProgressHandle]. For regular commands,
+  /// returns a static notifier that always returns 0.0.
+  ///
+  /// Updated by calling [ProgressHandle.updateProgress] inside the command function.
+  /// UI can observe this to show progress bars or percentage indicators.
+  ///
+  /// Example:
+  /// ```dart
+  /// // In UI
+  /// watchValue((MyService s) => s.uploadCommand.progress)
+  /// LinearProgressIndicator(value: command.progress.value)
+  /// ```
+  ValueListenable<double> get progress => _handle?.progress ?? _defaultProgress;
+
+  /// Observable status message providing human-readable operation status.
+  ///
+  /// For commands created with `WithProgress` factories, returns the actual
+  /// status message notifier from the [ProgressHandle]. For regular commands,
+  /// returns a static notifier that always returns null.
+  ///
+  /// Updated by calling [ProgressHandle.updateStatusMessage] inside the command function.
+  /// UI can observe this to show operation details to users.
+  ///
+  /// Example:
+  /// ```dart
+  /// // In UI
+  /// watchValue((MyService s) => s.uploadCommand.statusMessage)
+  /// Text(command.statusMessage.value ?? 'Ready')
+  /// ```
+  ValueListenable<String?> get statusMessage =>
+      _handle?.statusMessage ?? _defaultStatusMessage;
+
+  /// Observable cancellation flag.
+  ///
+  /// For commands created with `WithProgress` factories, returns the actual
+  /// cancellation notifier from the [ProgressHandle]. For regular commands,
+  /// returns a static notifier that always returns false.
+  ///
+  /// Set to true when [cancel] is called. The wrapped command function
+  /// should check `isCanceled.value` periodically and handle cancellation
+  /// cooperatively (e.g., return early, throw exception, clean up resources).
+  ///
+  /// Can also be observed via `.listen()` to forward cancellation to external
+  /// tokens (e.g., Dio's CancelToken).
+  ///
+  /// Example:
+  /// ```dart
+  /// // In command function
+  /// if (handle.isCanceled.value) return partialResult;
+  ///
+  /// // Or reactive forwarding
+  /// handle.isCanceled.listen((canceled) {
+  ///   if (canceled) dioToken.cancel();
+  /// });
+  /// ```
+  ValueListenable<bool> get isCanceled =>
+      _handle?.isCanceled ?? _defaultCanceled;
+
+  /// Requests cooperative cancellation of the command execution.
+  ///
+  /// For commands created with `WithProgress` factories, sets the cancellation
+  /// flag in the [ProgressHandle]. The wrapped function is responsible for
+  /// checking this flag and responding appropriately.
+  ///
+  /// For regular commands without progress tracking, this is a no-op.
+  ///
+  /// This does NOT forcibly stop execution - cancellation is cooperative.
+  /// The function must check `handle.isCanceled.value` and decide how to handle it.
+  void cancel() => _handle?.cancel();
+
   /// optional hander that will get called on any exception that happens inside
   /// any Command of the app. Ideal for logging.
   /// the [name] of the Command that was responsible for the error is inside
@@ -649,6 +723,21 @@ abstract class Command<TParam, TResult> extends CustomValueNotifier<TResult> {
     globalExceptionHandler?.call(error, stackTrace);
   }
 
+  /// Default progress notifier returned for commands without ProgressHandle.
+  /// Always returns 0.0 and never changes.
+  static final CustomValueNotifier<double> _defaultProgress =
+      CustomValueNotifier<double>(0.0);
+
+  /// Default status message notifier returned for commands without ProgressHandle.
+  /// Always returns null and never changes.
+  static final CustomValueNotifier<String?> _defaultStatusMessage =
+      CustomValueNotifier<String?>(null);
+
+  /// Default cancellation notifier returned for commands without ProgressHandle.
+  /// Always returns false and never changes.
+  static final CustomValueNotifier<bool> _defaultCanceled =
+      CustomValueNotifier<bool>(false);
+
   /// as we don't want that anyone changes the values of these ValueNotifiers
   /// properties we make them private and only publish their `ValueListenable`
   /// interface via getters.
@@ -667,6 +756,10 @@ abstract class Command<TParam, TResult> extends CustomValueNotifier<TResult> {
     null,
     mode: CustomNotifierMode.manual,
   );
+
+  /// Optional progress handle for commands created with WithProgress factories.
+  /// Null for commands without progress tracking.
+  ProgressHandle? _handle;
 
   /// If you don't need a command any longer it is a good practise to
   /// dispose it to make sure all registered notification handlers are remove to
@@ -691,6 +784,7 @@ abstract class Command<TParam, TResult> extends CustomValueNotifier<TResult> {
       _isRunning.dispose();
       _isRunningAsync.dispose();
       _errors.dispose();
+      _handle?.dispose();
       if (!(_futureCompleter?.isCompleted ?? true)) {
         _futureCompleter!.complete(null);
         _futureCompleter = null;
@@ -1724,5 +1818,528 @@ abstract class Command<TParam, TResult> extends CustomValueNotifier<TResult> {
       noParamValue: false,
       undoOnExecutionFailure: undoOnExecutionFailure,
     );
+  }
+
+  /// Creates an async Command with [ProgressHandle] for progress tracking,
+  /// status messages, and cooperative cancellation.
+  ///
+  /// The wrapped function receives both the parameter and a [ProgressHandle]
+  /// that can be used to report progress (0.0-1.0), update status messages,
+  /// and check for cancellation requests.
+  ///
+  /// Example:
+  /// ```dart
+  /// final uploadCommand = Command.createAsyncWithProgress<File, String>(
+  ///   (file, handle) async {
+  ///     for (int i = 0; i <= 100; i += 10) {
+  ///       if (handle.isCanceled.value) return 'Canceled';
+  ///       await uploadChunk(file, i);
+  ///       handle.updateProgress(i / 100.0);
+  ///       handle.updateStatusMessage('Uploading: $i%');
+  ///     }
+  ///     return 'Complete';
+  ///   },
+  ///   initialValue: '',
+  /// );
+  ///
+  /// // UI observes progress
+  /// LinearProgressIndicator(value: uploadCommand.progress.value)
+  /// Text(uploadCommand.statusMessage.value ?? 'Ready')
+  ///
+  /// // UI can cancel
+  /// ElevatedButton(onPressed: uploadCommand.cancel, child: Text('Cancel'))
+  /// ```
+  ///
+  /// [func] : handler function that receives parameter and ProgressHandle
+  /// [initialValue] : the initial value that the Command has before it executes
+  /// [restriction] : `ValueListenable<bool>` that can be used to enable/disable
+  /// the command based on some other state change. `true` means that the Command cannot be executed.
+  /// [ifRestrictedRunInstead] : if [restriction] is set and its value is `true`,
+  /// this function will be called instead of the wrapped function
+  /// [includeLastResultInCommandResults] : by default false, if set to `true` the
+  /// `data` field of `CommandResult` will hold the last valid result even while
+  /// running and in case of an error
+  /// [errorFilter] : overrides the default set by [errorFilterDefault]
+  /// [errorFilterFn] : function-based error filter (alternative to errorFilter)
+  /// [notifyOnlyWhenValueChanges] : if `true`, only notifies listeners when value changes
+  /// [debugName] : optional name for debugging/logging
+  static Command<TParam, TResult> createAsyncWithProgress<TParam, TResult>(
+    Future<TResult> Function(TParam x, ProgressHandle handle) func, {
+    required TResult initialValue,
+    ValueListenable<bool>? restriction,
+    RunInsteadHandler<TParam>? ifRestrictedRunInstead,
+    bool includeLastResultInCommandResults = false,
+    ErrorFilter? errorFilter,
+    ErrorFilterFn? errorFilterFn,
+    bool notifyOnlyWhenValueChanges = false,
+    String? debugName,
+  }) {
+    // Create the ProgressHandle
+    final handle = ProgressHandle();
+
+    // Wrap the user's function to inject the handle
+    Future<TResult> wrappedFunc(TParam param) => func(param, handle);
+
+    // Create the command with the wrapped function
+    final command = CommandAsync<TParam, TResult>(
+      func: wrappedFunc,
+      initialValue: initialValue,
+      restriction: restriction,
+      ifRestrictedRunInstead: ifRestrictedRunInstead,
+      ifRestrictedExecuteInstead: null,
+      includeLastResultInCommandResults: includeLastResultInCommandResults,
+      noReturnValue: false,
+      errorFilter: errorFilter,
+      errorFilterFn: errorFilterFn,
+      notifyOnlyWhenValueChanges: notifyOnlyWhenValueChanges,
+      name: debugName,
+      noParamValue: false,
+    );
+
+    // Attach the handle to the command
+    command._handle = handle;
+
+    return command;
+  }
+
+  /// Creates an async Command with [ProgressHandle] for no-parameter functions.
+  ///
+  /// Similar to [createAsyncWithProgress] but for functions that don't take parameters.
+  ///
+  /// Example:
+  /// ```dart
+  /// final syncCommand = Command.createAsyncNoParamWithProgress<String>(
+  ///   (handle) async {
+  ///     handle.updateStatusMessage('Syncing...');
+  ///     for (int i = 0; i < 10; i++) {
+  ///       if (handle.isCanceled.value) return 'Canceled';
+  ///       await syncItem(i);
+  ///       handle.updateProgress((i + 1) / 10.0);
+  ///     }
+  ///     return 'Synced';
+  ///   },
+  ///   initialValue: '',
+  /// );
+  /// ```
+  static Command<void, TResult> createAsyncNoParamWithProgress<TResult>(
+    Future<TResult> Function(ProgressHandle handle) func, {
+    required TResult initialValue,
+    ValueListenable<bool>? restriction,
+    VoidCallback? ifRestrictedRunInstead,
+    bool includeLastResultInCommandResults = false,
+    ErrorFilter? errorFilter,
+    ErrorFilterFn? errorFilterFn,
+    bool notifyOnlyWhenValueChanges = false,
+    String? debugName,
+  }) {
+    // Create the ProgressHandle
+    final handle = ProgressHandle();
+
+    // Wrap the user's function to inject the handle
+    Future<TResult> wrappedFunc() => func(handle);
+
+    // Create the command with the wrapped function
+    final command = CommandAsync<void, TResult>(
+      funcNoParam: wrappedFunc,
+      initialValue: initialValue,
+      restriction: restriction,
+      ifRestrictedRunInstead: ifRestrictedRunInstead != null
+          ? (_) => ifRestrictedRunInstead()
+          : null,
+      ifRestrictedExecuteInstead: null,
+      includeLastResultInCommandResults: includeLastResultInCommandResults,
+      noReturnValue: false,
+      errorFilter: errorFilter,
+      errorFilterFn: errorFilterFn,
+      notifyOnlyWhenValueChanges: notifyOnlyWhenValueChanges,
+      name: debugName,
+      noParamValue: true,
+    );
+
+    // Attach the handle to the command
+    command._handle = handle;
+
+    return command;
+  }
+
+  /// Creates an async Command with [ProgressHandle] for void-return functions.
+  ///
+  /// Similar to [createAsyncWithProgress] but for functions that don't return a value.
+  ///
+  /// Example:
+  /// ```dart
+  /// final deleteCommand = Command.createAsyncNoResultWithProgress<int>(
+  ///   (itemId, handle) async {
+  ///     handle.updateStatusMessage('Deleting item $itemId...');
+  ///     await api.delete(itemId);
+  ///     handle.updateProgress(1.0);
+  ///   },
+  /// );
+  /// ```
+  static Command<TParam, void> createAsyncNoResultWithProgress<TParam>(
+    Future<void> Function(TParam x, ProgressHandle handle) action, {
+    ValueListenable<bool>? restriction,
+    RunInsteadHandler<TParam>? ifRestrictedRunInstead,
+    ErrorFilter? errorFilter,
+    ErrorFilterFn? errorFilterFn,
+    String? debugName,
+  }) {
+    // Create the ProgressHandle
+    final handle = ProgressHandle();
+
+    // Wrap the user's action to inject the handle
+    Future<void> wrappedAction(TParam param) => action(param, handle);
+
+    // Create the command with the wrapped action
+    final command = CommandAsync<TParam, void>(
+      func: wrappedAction,
+      initialValue: null,
+      restriction: restriction,
+      ifRestrictedRunInstead: ifRestrictedRunInstead,
+      ifRestrictedExecuteInstead: null,
+      includeLastResultInCommandResults: false,
+      noReturnValue: true,
+      errorFilter: errorFilter,
+      errorFilterFn: errorFilterFn,
+      notifyOnlyWhenValueChanges: false,
+      name: debugName,
+      noParamValue: false,
+    );
+
+    // Attach the handle to the command
+    command._handle = handle;
+
+    return command;
+  }
+
+  /// Creates an async Command with [ProgressHandle] for no-parameter, void-return functions.
+  ///
+  /// Similar to [createAsyncWithProgress] but for functions that neither take
+  /// parameters nor return values.
+  ///
+  /// Example:
+  /// ```dart
+  /// final refreshCommand = Command.createAsyncNoParamNoResultWithProgress(
+  ///   (handle) async {
+  ///     handle.updateStatusMessage('Refreshing...');
+  ///     handle.updateProgress(0.5);
+  ///     await api.refresh();
+  ///     handle.updateProgress(1.0);
+  ///   },
+  /// );
+  /// ```
+  static Command<void, void> createAsyncNoParamNoResultWithProgress(
+    Future<void> Function(ProgressHandle handle) action, {
+    ValueListenable<bool>? restriction,
+    VoidCallback? ifRestrictedRunInstead,
+    ErrorFilter? errorFilter,
+    ErrorFilterFn? errorFilterFn,
+    String? debugName,
+  }) {
+    // Create the ProgressHandle
+    final handle = ProgressHandle();
+
+    // Wrap the user's action to inject the handle
+    Future<void> wrappedAction() => action(handle);
+
+    // Create the command with the wrapped action
+    final command = CommandAsync<void, void>(
+      funcNoParam: wrappedAction,
+      initialValue: null,
+      restriction: restriction,
+      ifRestrictedRunInstead: ifRestrictedRunInstead != null
+          ? (_) => ifRestrictedRunInstead()
+          : null,
+      ifRestrictedExecuteInstead: null,
+      includeLastResultInCommandResults: false,
+      noReturnValue: true,
+      errorFilter: errorFilter,
+      errorFilterFn: errorFilterFn,
+      notifyOnlyWhenValueChanges: false,
+      name: debugName,
+      noParamValue: true,
+    );
+
+    // Attach the handle to the command
+    command._handle = handle;
+
+    return command;
+  }
+
+  /// Creates an undoable Command with [ProgressHandle] for async functions.
+  ///
+  /// Combines undo capability with progress tracking, status messages, and cancellation.
+  /// The wrapped function receives the parameter, ProgressHandle, and UndoStack.
+  ///
+  /// Example:
+  /// ```dart
+  /// final uploadCommand = Command.createUndoableWithProgress<File, String, UploadState>(
+  ///   (file, handle, undoStack) async {
+  ///     handle.updateStatusMessage('Starting upload...');
+  ///     final uploadId = await api.startUpload(file);
+  ///     undoStack.addUndoState(UploadState(uploadId));
+  ///
+  ///     for (int i = 0; i < chunks; i++) {
+  ///       if (handle.isCanceled.value) {
+  ///         await api.cancelUpload(uploadId);
+  ///         return 'Canceled';
+  ///       }
+  ///       await uploadChunk(file, i);
+  ///       handle.updateProgress((i + 1) / chunks);
+  ///     }
+  ///     return 'Upload complete';
+  ///   },
+  ///   undo: (state, _) async {
+  ///     await api.deleteUpload(state.uploadId);
+  ///   },
+  ///   initialValue: '',
+  /// );
+  /// ```
+  static Command<TParam, TResult>
+      createUndoableWithProgress<TParam, TResult, TUndoState>(
+    Future<TResult> Function(TParam, ProgressHandle, UndoStack<TUndoState>)
+        func, {
+    required TResult initialValue,
+    required UndoFn<TUndoState, TResult> undo,
+    bool undoOnExecutionFailure = true,
+    ValueListenable<bool>? restriction,
+    RunInsteadHandler<TParam>? ifRestrictedRunInstead,
+    bool includeLastResultInCommandResults = false,
+    ErrorFilter? errorFilter,
+    ErrorFilterFn? errorFilterFn,
+    bool notifyOnlyWhenValueChanges = false,
+    String? debugName,
+  }) {
+    // Create the ProgressHandle
+    final handle = ProgressHandle();
+
+    // Wrap the user's function to inject the handle
+    Future<TResult> wrappedFunc(
+            TParam param, UndoStack<TUndoState> undoStack) =>
+        func(param, handle, undoStack);
+
+    // Create the command with the wrapped function
+    final command = UndoableCommand<TParam, TResult, TUndoState>(
+      func: wrappedFunc,
+      initialValue: initialValue,
+      undo: undo,
+      restriction: restriction,
+      ifRestrictedRunInstead: ifRestrictedRunInstead,
+      ifRestrictedExecuteInstead: null,
+      includeLastResultInCommandResults: includeLastResultInCommandResults,
+      noReturnValue: false,
+      errorFilter: errorFilter,
+      errorFilterFn: errorFilterFn,
+      notifyOnlyWhenValueChanges: notifyOnlyWhenValueChanges,
+      name: debugName,
+      noParamValue: false,
+      undoOnExecutionFailure: undoOnExecutionFailure,
+    );
+
+    // Attach the handle to the command
+    command._handle = handle;
+
+    return command;
+  }
+
+  /// Creates an undoable Command with [ProgressHandle] for no-parameter functions.
+  ///
+  /// Similar to [createUndoableWithProgress] but for functions that don't take parameters.
+  ///
+  /// Example:
+  /// ```dart
+  /// final syncCommand = Command.createUndoableNoParamWithProgress<String, SyncState>(
+  ///   (handle, undoStack) async {
+  ///     handle.updateStatusMessage('Syncing...');
+  ///     final timestamp = DateTime.now();
+  ///     undoStack.addUndoState(SyncState(timestamp));
+  ///
+  ///     for (int i = 0; i < items; i++) {
+  ///       if (handle.isCanceled.value) return 'Canceled';
+  ///       await syncItem(i);
+  ///       handle.updateProgress((i + 1) / items);
+  ///     }
+  ///     return 'Synced';
+  ///   },
+  ///   undo: (state, _) async {
+  ///     await revertToTimestamp(state.timestamp);
+  ///   },
+  ///   initialValue: '',
+  /// );
+  /// ```
+  static Command<void, TResult>
+      createUndoableNoParamWithProgress<TResult, TUndoState>(
+    Future<TResult> Function(ProgressHandle, UndoStack<TUndoState>) func, {
+    required TResult initialValue,
+    required UndoFn<TUndoState, TResult> undo,
+    bool undoOnExecutionFailure = true,
+    ValueListenable<bool>? restriction,
+    VoidCallback? ifRestrictedRunInstead,
+    bool includeLastResultInCommandResults = false,
+    ErrorFilter? errorFilter,
+    ErrorFilterFn? errorFilterFn,
+    bool notifyOnlyWhenValueChanges = false,
+    String? debugName,
+  }) {
+    // Create the ProgressHandle
+    final handle = ProgressHandle();
+
+    // Wrap the user's function to inject the handle
+    Future<TResult> wrappedFunc(UndoStack<TUndoState> undoStack) =>
+        func(handle, undoStack);
+
+    // Create the command with the wrapped function
+    final command = UndoableCommand<void, TResult, TUndoState>(
+      funcNoParam: wrappedFunc,
+      initialValue: initialValue,
+      undo: undo,
+      restriction: restriction,
+      ifRestrictedRunInstead: ifRestrictedRunInstead != null
+          ? (_) => ifRestrictedRunInstead()
+          : null,
+      ifRestrictedExecuteInstead: null,
+      includeLastResultInCommandResults: includeLastResultInCommandResults,
+      noReturnValue: false,
+      errorFilter: errorFilter,
+      errorFilterFn: errorFilterFn,
+      notifyOnlyWhenValueChanges: notifyOnlyWhenValueChanges,
+      name: debugName,
+      noParamValue: true,
+      undoOnExecutionFailure: undoOnExecutionFailure,
+    );
+
+    // Attach the handle to the command
+    command._handle = handle;
+
+    return command;
+  }
+
+  /// Creates an undoable Command with [ProgressHandle] for void-return functions.
+  ///
+  /// Similar to [createUndoableWithProgress] but for functions that don't return a value.
+  ///
+  /// Example:
+  /// ```dart
+  /// final deleteCommand = Command.createUndoableNoResultWithProgress<int, DeleteState>(
+  ///   (itemId, handle, undoStack) async {
+  ///     handle.updateStatusMessage('Deleting item $itemId...');
+  ///     final item = await api.getItem(itemId);
+  ///     undoStack.addUndoState(DeleteState(item));
+  ///     await api.delete(itemId);
+  ///     handle.updateProgress(1.0);
+  ///   },
+  ///   undo: (state, _) async {
+  ///     await api.restore(state.item);
+  ///   },
+  /// );
+  /// ```
+  static Command<TParam, void>
+      createUndoableNoResultWithProgress<TParam, TUndoState>(
+    Future<void> Function(TParam, ProgressHandle, UndoStack<TUndoState>)
+        action, {
+    required UndoFn<TUndoState, void> undo,
+    bool undoOnExecutionFailure = true,
+    ValueListenable<bool>? restriction,
+    RunInsteadHandler<TParam>? ifRestrictedRunInstead,
+    ErrorFilter? errorFilter,
+    ErrorFilterFn? errorFilterFn,
+    String? debugName,
+  }) {
+    // Create the ProgressHandle
+    final handle = ProgressHandle();
+
+    // Wrap the user's action to inject the handle
+    Future<void> wrappedAction(TParam param, UndoStack<TUndoState> undoStack) =>
+        action(param, handle, undoStack);
+
+    // Create the command with the wrapped action
+    final command = UndoableCommand<TParam, void, TUndoState>(
+      func: wrappedAction,
+      initialValue: null,
+      undo: undo,
+      restriction: restriction,
+      ifRestrictedRunInstead: ifRestrictedRunInstead,
+      ifRestrictedExecuteInstead: null,
+      includeLastResultInCommandResults: false,
+      noReturnValue: true,
+      errorFilter: errorFilter,
+      errorFilterFn: errorFilterFn,
+      notifyOnlyWhenValueChanges: false,
+      name: debugName,
+      noParamValue: false,
+      undoOnExecutionFailure: undoOnExecutionFailure,
+    );
+
+    // Attach the handle to the command
+    command._handle = handle;
+
+    return command;
+  }
+
+  /// Creates an undoable Command with [ProgressHandle] for no-parameter, void-return functions.
+  ///
+  /// Similar to [createUndoableWithProgress] but for functions that neither take
+  /// parameters nor return values.
+  ///
+  /// Example:
+  /// ```dart
+  /// final clearCacheCommand = Command.createUndoableNoParamNoResultWithProgress<CacheState>(
+  ///   (handle, undoStack) async {
+  ///     handle.updateStatusMessage('Backing up cache...');
+  ///     final backup = await backupCache();
+  ///     undoStack.addUndoState(CacheState(backup));
+  ///     handle.updateProgress(0.5);
+  ///
+  ///     handle.updateStatusMessage('Clearing cache...');
+  ///     await clearCache();
+  ///     handle.updateProgress(1.0);
+  ///   },
+  ///   undo: (state, _) async {
+  ///     await restoreCache(state.backup);
+  ///   },
+  /// );
+  /// ```
+  static Command<void, void>
+      createUndoableNoParamNoResultWithProgress<TUndoState>(
+    Future<void> Function(ProgressHandle, UndoStack<TUndoState>) action, {
+    required UndoFn<TUndoState, void> undo,
+    bool undoOnExecutionFailure = true,
+    ValueListenable<bool>? restriction,
+    VoidCallback? ifRestrictedRunInstead,
+    ErrorFilter? errorFilter,
+    ErrorFilterFn? errorFilterFn,
+    String? debugName,
+  }) {
+    // Create the ProgressHandle
+    final handle = ProgressHandle();
+
+    // Wrap the user's action to inject the handle
+    Future<void> wrappedAction(UndoStack<TUndoState> undoStack) =>
+        action(handle, undoStack);
+
+    // Create the command with the wrapped action
+    final command = UndoableCommand<void, void, TUndoState>(
+      funcNoParam: wrappedAction,
+      initialValue: null,
+      undo: undo,
+      restriction: restriction,
+      ifRestrictedRunInstead: ifRestrictedRunInstead != null
+          ? (_) => ifRestrictedRunInstead()
+          : null,
+      ifRestrictedExecuteInstead: null,
+      includeLastResultInCommandResults: false,
+      noReturnValue: true,
+      errorFilter: errorFilter,
+      errorFilterFn: errorFilterFn,
+      notifyOnlyWhenValueChanges: false,
+      name: debugName,
+      noParamValue: true,
+      undoOnExecutionFailure: undoOnExecutionFailure,
+    );
+
+    // Attach the handle to the command
+    command._handle = handle;
+
+    return command;
   }
 }
