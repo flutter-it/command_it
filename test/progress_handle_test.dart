@@ -93,28 +93,75 @@ void main() {
       expect(statusCollector.values, ['Loading...', 'Processing...', null]);
     });
 
-    test('cancel sets isCanceled and notifies', () {
+    test('cancel sets isCanceled and clears progress/status', () {
+      // Set up some state first
+      handle.updateProgress(0.75);
+      handle.updateStatusMessage('Almost done');
+
+      expect(handle.progress.value, 0.75);
+      expect(handle.statusMessage.value, 'Almost done');
       expect(handle.isCanceled.value, false);
 
-      handle.cancel();
-      expect(handle.isCanceled.value, true);
-      expect(canceledCollector.values, [true]);
+      // Clear collectors to track cancel changes
+      progressCollector.clear();
+      statusCollector.clear();
+      canceledCollector.clear();
 
-      // Calling cancel again is idempotent (value doesn't change, may not notify)
+      // Cancel
       handle.cancel();
+
+      // Verify all state was cleared
       expect(handle.isCanceled.value, true);
-      // Listener may or may not fire again for same value - just verify it's canceled
+      expect(handle.progress.value, 0.0);
+      expect(handle.statusMessage.value, null);
+
+      // Verify listeners were notified
+      expect(canceledCollector.values, [true]);
+      expect(progressCollector.values, [0.0]);
+      expect(statusCollector.values, [null]);
+    });
+
+    test('reset clears all state back to initial values', () {
+      // Set up some state
+      handle.updateProgress(0.75);
+      handle.updateStatusMessage('Almost done');
+      handle.cancel(); // This sets isCanceled=true and clears progress/status
+
+      // Set progress again so reset() causes a change notification
+      handle.updateProgress(0.5);
+      handle.updateStatusMessage('Restarting...');
+
+      expect(handle.progress.value, 0.5);
+      expect(handle.statusMessage.value, 'Restarting...');
       expect(handle.isCanceled.value, true);
+
+      // Clear collectors to verify reset notifications
+      progressCollector.clear();
+      statusCollector.clear();
+      canceledCollector.clear();
+
+      // Reset
+      handle.reset();
+
+      // Verify all values reset to initial state
+      expect(handle.progress.value, 0.0);
+      expect(handle.statusMessage.value, null);
+      expect(handle.isCanceled.value, false);
+
+      // Verify listeners were notified of changes
+      expect(progressCollector.values, [0.0]);
+      expect(statusCollector.values, [null]);
+      expect(canceledCollector.values, [false]);
     });
 
     test('dispose cleans up all notifiers', () {
       handle.updateProgress(0.5);
       handle.updateStatusMessage('Test');
-      handle.cancel();
+      handle.cancel(); // cancel() also clears progress/status
 
       // Verify values were collected before dispose
-      expect(progressCollector.values, [0.5]);
-      expect(statusCollector.values, ['Test']);
+      expect(progressCollector.values, [0.5, 0.0]); // cancel() resets progress
+      expect(statusCollector.values, ['Test', null]); // cancel() resets status
       expect(canceledCollector.values, [true]);
 
       handle.dispose();
@@ -190,10 +237,54 @@ void main() {
         async.elapse(const Duration(milliseconds: 1000));
 
         expect(command.value, 'Canceled');
-        expect(command.progress.value, lessThan(1.0));
+        expect(command.progress.value, 0.0); // Cancel clears progress
+        expect(command.statusMessage.value, null); // Cancel clears status
+        expect(command.isCanceled.value, true);
 
         command.dispose();
       });
+    });
+
+    test('progress state resets automatically on new run', () async {
+      int executionCount = 0;
+
+      final command = Command.createAsyncWithProgress<void, String>(
+        (_, handle) async {
+          executionCount++;
+          handle.updateProgress(0.5);
+          handle.updateStatusMessage('Running execution $executionCount');
+          await Future<void>.delayed(const Duration(milliseconds: 10));
+          return 'Execution $executionCount complete';
+        },
+        initialValue: '',
+      );
+
+      // First run
+      await command.runAsync();
+      expect(command.value, 'Execution 1 complete');
+      expect(command.progress.value, 0.5);
+      expect(command.statusMessage.value, 'Running execution 1');
+
+      // Second run - should automatically reset before execution
+      await command.runAsync();
+      expect(command.value, 'Execution 2 complete');
+      expect(command.progress.value, 0.5);
+      expect(command.statusMessage.value, 'Running execution 2');
+
+      // Cancel and verify state is cleared
+      command.cancel();
+      expect(command.progress.value, 0.0);
+      expect(command.statusMessage.value, null);
+      expect(command.isCanceled.value, true);
+
+      // Third run - should reset cancel flag and allow execution
+      await command.runAsync();
+      expect(command.value, 'Execution 3 complete');
+      expect(command.progress.value, 0.5);
+      expect(command.statusMessage.value, 'Running execution 3');
+      expect(command.isCanceled.value, false); // Reset on new run
+
+      command.dispose();
     });
 
     test('default progress returns 0.0 for commands without handle', () {

@@ -1,3 +1,21 @@
+[9.4.1] - 2024-11-24
+
+### Bug Fixes
+
+- **Progress Control**: Fixed progress state not resetting between command executions
+  - Progress state (progress, statusMessage, isCanceled) now automatically resets at the start of each execution
+  - `cancel()` method now also clears progress and statusMessage (not just sets isCanceled flag)
+  - Prevents issues where canceled commands would remain canceled on subsequent runs
+  - Implementation uses wrapper functions in WithProgress factories to call `reset()` automatically
+
+**New Methods**:
+- `Command.resetProgress()` - Manually reset progress state (useful for clearing 100% progress from UI)
+
+**Technical Details**:
+- Added `ProgressHandle.reset()` method to clear all state back to initial values
+- All 8 WithProgress factory methods now wrap user functions to call `reset()` before execution
+- `cancel()` now sets isCanceled=true, progress=0.0, and statusMessage=null for clean UI state
+
 [9.4.0] - 2024-11-24
 
 ### New Features

@@ -619,6 +619,25 @@ abstract class Command<TParam, TResult> extends CustomValueNotifier<TResult> {
   /// The function must check `handle.isCanceled.value` and decide how to handle it.
   void cancel() => _handle?.cancel();
 
+  /// Manually resets all progress state to initial values.
+  ///
+  /// Clears progress (to 0.0), statusMessage (to null), and isCanceled (to false).
+  /// This is called automatically at the start of each execution, but can also
+  /// be called manually when needed (e.g., to clear 100% progress from UI after
+  /// completion).
+  ///
+  /// Example:
+  /// ```dart
+  /// // After successful completion, reset progress for next run
+  /// if (command.progress.value == 1.0) {
+  ///   await Future.delayed(Duration(seconds: 2));
+  ///   command.resetProgress();
+  /// }
+  /// ```
+  ///
+  /// For commands without progress (created with regular factories), this is a no-op.
+  void resetProgress() => _handle?.reset();
+
   /// optional hander that will get called on any exception that happens inside
   /// any Command of the app. Ideal for logging.
   /// the [name] of the Command that was responsible for the error is inside
@@ -1877,8 +1896,11 @@ abstract class Command<TParam, TResult> extends CustomValueNotifier<TResult> {
     // Create the ProgressHandle
     final handle = ProgressHandle();
 
-    // Wrap the user's function to inject the handle
-    Future<TResult> wrappedFunc(TParam param) => func(param, handle);
+    // Wrap the user's function to reset handle state and inject the handle
+    Future<TResult> wrappedFunc(TParam param) async {
+      handle.reset(); // Reset progress state before each execution
+      return await func(param, handle);
+    }
 
     // Create the command with the wrapped function
     final command = CommandAsync<TParam, TResult>(
@@ -1935,8 +1957,11 @@ abstract class Command<TParam, TResult> extends CustomValueNotifier<TResult> {
     // Create the ProgressHandle
     final handle = ProgressHandle();
 
-    // Wrap the user's function to inject the handle
-    Future<TResult> wrappedFunc() => func(handle);
+    // Wrap the user's function to reset handle state and inject the handle
+    Future<TResult> wrappedFunc() async {
+      handle.reset(); // Reset progress state before each execution
+      return await func(handle);
+    }
 
     // Create the command with the wrapped function
     final command = CommandAsync<void, TResult>(
@@ -1987,8 +2012,11 @@ abstract class Command<TParam, TResult> extends CustomValueNotifier<TResult> {
     // Create the ProgressHandle
     final handle = ProgressHandle();
 
-    // Wrap the user's action to inject the handle
-    Future<void> wrappedAction(TParam param) => action(param, handle);
+    // Wrap the user's action to reset handle state and inject the handle
+    Future<void> wrappedAction(TParam param) async {
+      handle.reset(); // Reset progress state before each execution
+      return await action(param, handle);
+    }
 
     // Create the command with the wrapped action
     final command = CommandAsync<TParam, void>(
@@ -2039,8 +2067,11 @@ abstract class Command<TParam, TResult> extends CustomValueNotifier<TResult> {
     // Create the ProgressHandle
     final handle = ProgressHandle();
 
-    // Wrap the user's action to inject the handle
-    Future<void> wrappedAction() => action(handle);
+    // Wrap the user's action to reset handle state and inject the handle
+    Future<void> wrappedAction() async {
+      handle.reset(); // Reset progress state before each execution
+      return await action(handle);
+    }
 
     // Create the command with the wrapped action
     final command = CommandAsync<void, void>(
@@ -2113,10 +2144,12 @@ abstract class Command<TParam, TResult> extends CustomValueNotifier<TResult> {
     // Create the ProgressHandle
     final handle = ProgressHandle();
 
-    // Wrap the user's function to inject the handle
+    // Wrap the user's function to reset handle state and inject the handle
     Future<TResult> wrappedFunc(
-            TParam param, UndoStack<TUndoState> undoStack) =>
-        func(param, handle, undoStack);
+        TParam param, UndoStack<TUndoState> undoStack) async {
+      handle.reset(); // Reset progress state before each execution
+      return await func(param, handle, undoStack);
+    }
 
     // Create the command with the wrapped function
     final command = UndoableCommand<TParam, TResult, TUndoState>(
@@ -2184,9 +2217,11 @@ abstract class Command<TParam, TResult> extends CustomValueNotifier<TResult> {
     // Create the ProgressHandle
     final handle = ProgressHandle();
 
-    // Wrap the user's function to inject the handle
-    Future<TResult> wrappedFunc(UndoStack<TUndoState> undoStack) =>
-        func(handle, undoStack);
+    // Wrap the user's function to reset handle state and inject the handle
+    Future<TResult> wrappedFunc(UndoStack<TUndoState> undoStack) async {
+      handle.reset(); // Reset progress state before each execution
+      return await func(handle, undoStack);
+    }
 
     // Create the command with the wrapped function
     final command = UndoableCommand<void, TResult, TUndoState>(
@@ -2248,9 +2283,12 @@ abstract class Command<TParam, TResult> extends CustomValueNotifier<TResult> {
     // Create the ProgressHandle
     final handle = ProgressHandle();
 
-    // Wrap the user's action to inject the handle
-    Future<void> wrappedAction(TParam param, UndoStack<TUndoState> undoStack) =>
-        action(param, handle, undoStack);
+    // Wrap the user's action to reset handle state and inject the handle
+    Future<void> wrappedAction(
+        TParam param, UndoStack<TUndoState> undoStack) async {
+      handle.reset(); // Reset progress state before each execution
+      return await action(param, handle, undoStack);
+    }
 
     // Create the command with the wrapped action
     final command = UndoableCommand<TParam, void, TUndoState>(
@@ -2313,9 +2351,11 @@ abstract class Command<TParam, TResult> extends CustomValueNotifier<TResult> {
     // Create the ProgressHandle
     final handle = ProgressHandle();
 
-    // Wrap the user's action to inject the handle
-    Future<void> wrappedAction(UndoStack<TUndoState> undoStack) =>
-        action(handle, undoStack);
+    // Wrap the user's action to reset handle state and inject the handle
+    Future<void> wrappedAction(UndoStack<TUndoState> undoStack) async {
+      handle.reset(); // Reset progress state before each execution
+      return await action(handle, undoStack);
+    }
 
     // Create the command with the wrapped action
     final command = UndoableCommand<void, void, TUndoState>(

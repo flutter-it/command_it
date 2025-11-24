@@ -77,13 +77,32 @@ class ProgressHandle {
 
   /// Requests cooperative cancellation of the operation.
   ///
-  /// Sets the [isCanceled] flag to true. The wrapped command function
-  /// is responsible for checking this flag and responding appropriately.
+  /// Sets the [isCanceled] flag to true and clears progress/status state.
+  /// The wrapped command function is responsible for checking this flag
+  /// and responding appropriately.
   ///
   /// This does NOT forcibly stop execution - cancellation is cooperative.
   /// The function must check `isCanceled.value` and decide how to handle it.
   void cancel() {
     _isCanceled.value = true;
+    _progress.value = 0.0;
+    _statusMessage.value = null;
+  }
+
+  /// Resets all progress state to initial values.
+  ///
+  /// Called automatically at the start of each command execution.
+  /// Resets:
+  /// - [progress] to 0.0
+  /// - [statusMessage] to null
+  /// - [isCanceled] to false
+  ///
+  /// This ensures each command execution starts with clean state,
+  /// especially important for the cancellation flag.
+  void reset() {
+    _progress.value = 0.0;
+    _statusMessage.value = null;
+    _isCanceled.value = false;
   }
 
   /// Disposes all internal notifiers.
