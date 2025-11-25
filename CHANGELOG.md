@@ -1,3 +1,9 @@
+[9.4.2] - 2025-11-25
+
+### Maintenance
+
+- Updated example projects
+
 [9.4.1] - 2024-11-24
 
 ### Bug Fixes
