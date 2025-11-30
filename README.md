@@ -166,7 +166,27 @@ Declarative error routing with filters:
 - **[Command Restrictions](https://flutter-it.dev/documentation/command_it/restrictions)** — Disable commands conditionally
 - **[CommandBuilder](https://flutter-it.dev/documentation/command_it/command_builders)** — Widget for simpler UI code
 - **[Undoable Commands](https://flutter-it.dev/documentation/command_it/undoable_commands)** — Built-in undo/redo support
+- **[Command Piping](#piping-commands)** — Chain commands together automatically
 - **[Testing](https://flutter-it.dev/documentation/command_it/testing)** — Patterns for testing commands
+
+### Piping Commands
+
+Chain commands together with the `pipeToCommand()` extension. When the source completes successfully, it automatically triggers the target command:
+
+```dart
+// Trigger refresh after save completes
+saveCommand.pipeToCommand(refreshCommand);
+
+// Transform result before passing to target
+userIdCommand.pipeToCommand(fetchUserCommand, transform: (id) => UserRequest(id));
+
+// Pipe from any ValueListenable - track execution state changes
+longRunningCommand.isRunning.pipeToCommand(spinnerStateCommand);
+```
+
+The `pipeToCommand()` extension works on any `ValueListenable`, including commands, `isRunning`, `results`, or plain `ValueNotifier`. Returns a `ListenableSubscription` for manual cancellation if needed.
+
+> ⚠️ **Warning:** Circular pipes (A→B→A) cause infinite loops. Ensure your pipe graph is acyclic.
 
 ## Ecosystem Integration
 

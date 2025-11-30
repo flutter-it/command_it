@@ -1,3 +1,26 @@
+[9.5.0] - 2025-11-29
+
+### New Features
+
+- **Command Piping**: New `pipeToCommand()` extension on `ValueListenable<T>` to chain commands together
+  - When the source ValueListenable changes, automatically triggers the target command
+  - Works on any ValueListenable: commands, `isRunning`, `results`, or plain `ValueNotifier`
+  - Optional `transform` parameter to convert source value to target parameter type
+  - Smart type handling: passes value directly if types match, calls `run()` without param if they don't
+  - Returns `ListenableSubscription` for manual cancellation
+
+**Usage Examples**:
+```dart
+// Trigger refresh after save completes
+saveCommand.pipeToCommand(refreshCommand);
+
+// Transform result before passing to target
+userIdCommand.pipeToCommand(fetchUserCommand, transform: (id) => UserRequest(id));
+
+// Pipe from isRunning to track execution state
+longCommand.isRunning.pipeToCommand(spinnerCommand);
+```
+
 [9.4.2] - 2025-11-25
 
 ### Maintenance

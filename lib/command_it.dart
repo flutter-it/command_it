@@ -2394,3 +2394,50 @@ abstract class Command<TParam, TResult> extends CustomValueNotifier<TResult> {
     return command;
   }
 }
+
+/// Extension to pipe [ValueListenable] changes to a [Command].
+///
+/// This allows chaining commands - when the source ValueListenable changes,
+/// it automatically triggers the target command.
+///
+/// **Warning**: Circular pipes (A→B→A) will cause infinite loops.
+/// Ensure your pipe graph is acyclic.
+///
+/// Example:
+/// ```dart
+/// // Trigger refresh after save completes
+/// saveCommand.pipeToCommand(refreshCommand);
+///
+/// // With transform function
+/// userIdCommand.pipeToCommand(fetchUserCommand, transform: (id) => UserRequest(id));
+///
+/// // Pipe from isRunning to track execution state
+/// longCommand.isRunning.pipeToCommand(spinnerCommand);
+/// ```
+extension ValueListenablePipe<T> on ValueListenable<T> {
+  /// Triggers [target] command whenever this ValueListenable's value changes.
+  ///
+  /// - If [transform] is provided, transforms the value before passing to target
+  /// - If [transform] is null and value is assignable to TTargetParam, passes directly
+  /// - If [transform] is null and types don't match, calls target.run() without param
+  ///   (useful for triggering no-param commands)
+  ///
+  /// Returns the [ListenableSubscription] for manual cancellation if needed.
+  /// Normally, the subscription is automatically cleaned up when the source
+  /// ValueListenable is disposed.
+  ListenableSubscription pipeToCommand<TTargetParam, TTargetResult>(
+    Command<TTargetParam, TTargetResult> target, {
+    TTargetParam Function(T value)? transform,
+  }) {
+    return listen((value, _) {
+      if (transform != null) {
+        target.run(transform(value));
+      } else if (value is TTargetParam) {
+        target.run(value);
+      } else {
+        // Types don't match, call without param (for void/no-param targets)
+        target.run();
+      }
+    });
+  }
+}
