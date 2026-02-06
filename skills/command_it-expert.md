@@ -57,8 +57,8 @@ final result = await command.runAsync(param);  // Await result (async commands o
 ## Observable Properties (all ValueListenable)
 
 ```dart
-command.isRunning        // ValueListenable<bool> - ASYNC ONLY (asserts on sync)
-command.isRunningSync    // ValueListenable<bool> - safe for restrictions
+command.isRunning        // ValueListenable<bool> - ASYNC ONLY (asserts on sync), use for UI
+command.isRunningSync    // ValueListenable<bool> - ONLY for restrictions, NOT for UI updates
 command.canRun           // ValueListenable<bool> - !restriction && !isRunning
 command.errors           // ValueListenable<CommandError<TParam>?>
 command.errorsDynamic    // ValueListenable<CommandError<dynamic>?>
@@ -172,8 +172,19 @@ Command.globalExceptionHandler = (CommandError error, StackTrace stackTrace) {
 };
 ```
 
+**Global error stream** - `Command.globalErrors` is a `Stream<CommandError>` of all globally-handled errors. Use `registerStreamHandler` in your root widget to show toasts for errors not handled locally:
+```dart
+// In root widget (e.g. MyApp)
+registerStreamHandler(
+  target: Command.globalErrors,
+  handler: (context, snapshot, cancel) {
+    if (snapshot.hasData) showErrorToast(context, snapshot.data!.error);
+  },
+);
+```
+
 **Listening to errors**:
-`.errors` only emits actual `CommandError` objects - no null check needed. It only emits null if you explicitly call `clearErrors()`.
+`.errors` only emits actual `CommandError` objects - no null check needed. Errors are automatically reset to null on each new `run()` without triggering handlers.
 ```dart
 // With listen_it
 command.errors.listen((error, subscription) {
