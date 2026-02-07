@@ -1,3 +1,11 @@
+---
+name: listen-it-expert
+description: Expert guidance on listen_it ValueListenable operators and reactive collections for Flutter/Dart. Covers listen(), transformation operators (map, select, where, debounce, async), combining operators (combineLatest, mergeWith), operator chaining, reactive collections (ListNotifier, MapNotifier, SetNotifier), transactions, and CustomValueNotifier. Use when working with ValueListenable transformations, reactive data pipelines, or listen_it collections.
+metadata:
+  author: flutter-it
+  version: "1.0"
+---
+
 # listen_it Expert - ValueListenable Operators & Reactive Collections
 
 **What**: Extension methods on ValueListenable/Listenable for transformations, filtering, debouncing. Plus reactive collections. Pure Dart.

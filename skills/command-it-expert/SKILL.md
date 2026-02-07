@@ -1,3 +1,11 @@
+---
+name: command-it-expert
+description: Expert guidance on command_it command pattern for Flutter. Covers command creation (async, sync, undoable, with progress), execution, observable properties (isRunning, canRun, errors, results), restrictions, error handling with ErrorFilter/ErrorReaction, global error stream, and production patterns. Use when working with command_it commands, async operations with loading/error states, or command restrictions.
+metadata:
+  author: flutter-it
+  version: "1.0"
+---
+
 # command_it Expert - Command Pattern with Reactive States
 
 **What**: Wrap functions as command objects with automatic loading/error/result states. Built on listen_it.
