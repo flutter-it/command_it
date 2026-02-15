@@ -1,5 +1,5 @@
 import 'package:command_it/command_it.dart';
-import 'package:test/test.dart';
+import 'package:flutter_test/flutter_test.dart';
 
 // Test error types
 class NetworkException implements Exception {

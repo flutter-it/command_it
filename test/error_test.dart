@@ -1,7 +1,7 @@
 import 'dart:async';
 
 import 'package:command_it/command_it.dart';
-import 'package:test/test.dart';
+import 'package:flutter_test/flutter_test.dart';
 
 enum TestType { error, exception, assertion }
 

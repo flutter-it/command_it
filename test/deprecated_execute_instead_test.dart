@@ -1,6 +1,6 @@
 import 'package:command_it/command_it.dart';
 import 'package:flutter/foundation.dart';
-import 'package:test/test.dart';
+import 'package:flutter_test/flutter_test.dart';
 
 // ignore_for_file: deprecated_member_use_from_same_package
 
