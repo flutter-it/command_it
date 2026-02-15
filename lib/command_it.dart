@@ -972,7 +972,7 @@ abstract class Command<TParam, TResult> extends CustomValueNotifier<TResult> {
         if (!_hasLocalErrorHandler) {
           assert(
             globalExceptionHandler != null,
-            'Command: $_name: Errorfilter returned ErrorReaction.firsLocalThenGlobalHandler, but no global handler is registered',
+            'Command: $_name: Errorfilter returned ErrorReaction.firstLocalThenGlobalHandler, but no global handler is registered',
           );
           callGlobal = true;
         }
