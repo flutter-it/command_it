@@ -192,19 +192,21 @@ registerStreamHandler(
 ```
 
 **Listening to errors**:
-`.errors` only emits actual `CommandError` objects - no null check needed. Errors are automatically reset to null on each new `run()` without triggering handlers.
+`.errors` is `ValueListenable<CommandError?>` — the static type is nullable.
+At runtime, handlers only fire with actual `CommandError` objects (null resets don't trigger handlers).
+Use `error!` to promote — no null check needed (unless you call `clearErrors()`).
 ```dart
 // With listen_it
 command.errors.listen((error, subscription) {
-  showErrorDialog(error.error);
+  showErrorDialog(error.error);  // listen_it skips null emissions
 });
 
-// With watch_it registerHandler
+// With watch_it registerHandler — use error! to promote (handler never called with null)
 registerHandler(
   select: (MyManager m) => m.deleteCommand.errors,
   handler: (context, error, cancel) {
     ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(content: Text('Delete failed: ${error.error}')),
+      SnackBar(content: Text('Delete failed: ${error!.error}')),
     );
   },
 );
@@ -282,6 +284,58 @@ class Api404ToSentry403LocalErrorFilter implements ErrorFilter {
 }
 ```
 
+## Reacting to Command Completion
+
+A Command is itself a `ValueListenable`. There are three levels of observation:
+
+```dart
+// ✅ Watch the command itself — fires ONLY on successful completion
+registerHandler(
+  select: (MyManager m) => m.myCommand,
+  handler: (context, _, __) {
+    navigateAway();  // Only called on success
+  },
+);
+
+// ✅ Watch .errors — fires ONLY on errors
+registerHandler(
+  select: (MyManager m) => m.myCommand.errors,
+  handler: (context, error, _) {
+    showError(error!.error.toString());
+  },
+);
+
+// Watch .results — fires on EVERY state change (isRunning, success, error)
+// Use result.isSuccess / result.hasError / result.isRunning to distinguish
+registerHandler(
+  select: (MyManager m) => m.myCommand.results,
+  handler: (context, result, _) {
+    if (result.isSuccess) { ... }
+    if (result.hasError) { ... }
+    if (result.isRunning) { ... }
+  },
+);
+```
+
+**Prefer watching the command itself for success** and `.errors` for failures.
+Only use `.results` when you need to react to all state transitions.
+
+```dart
+// ❌ DON'T use isRunning to detect success — fragile and ambiguous
+registerHandler(
+  select: (MyManager m) => m.myCommand.isRunning,
+  handler: (context, isRunning, _) {
+    if (!isRunning && noError) { ... }  // Easy to get wrong
+  },
+);
+
+// ✅ DO watch the command itself
+registerHandler(
+  select: (MyManager m) => m.myCommand,
+  handler: (context, _, __) { ... },  // Only fires on success
+);
+```
+
 ## Anti-Patterns
 
 ```dart
@@ -301,4 +355,18 @@ cmd.isRunning;  // Works
 errorFilter: (error, hasLocal) => true  // WRONG TYPE
 // ✅ Return ErrorReaction enum
 errorFilterFn: (error, stackTrace) => ErrorReaction.localHandler
+
+// ❌ try/catch inside command body — commands handle errors automatically
+late final saveCommand = Command.createAsyncNoParamNoResult(() async {
+  try {
+    await api.save();
+  } catch (e) {
+    cleanup();
+    rethrow;
+  }
+});
+// ✅ Use .errors.listen() for side effects on error
+late final saveCommand = Command.createAsyncNoParamNoResult(
+  () async => await api.save(),
+)..errors.listen((_, _) => cleanup());
 ```
