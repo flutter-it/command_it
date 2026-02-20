@@ -449,6 +449,7 @@ abstract class Command<TParam, TResult> extends CustomValueNotifier<TResult> {
   }
 
   /// override this method to implement the actual command logic
+  // ignore: unused_element_parameter
   FutureOr<TResult> _run([TParam? param]);
 
   /// This makes Command a callable class, so instead of `myCommand.run()`

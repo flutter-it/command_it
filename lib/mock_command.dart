@@ -343,6 +343,7 @@ class MockCommand<TParam, TResult> extends Command<TParam, TResult> {
   }
 
   @override
+  // ignore: unused_element_parameter
   Future<TResult> _run([TParam? param]) async {
     // Not implemented - MockCommand overrides run() directly instead of using _run()
     throw UnimplementedError();
