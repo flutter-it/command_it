@@ -1,3 +1,8 @@
+[9.5.1] - 2026-02-19
+
+* Added AI skill files in `skills/` directory for AI coding assistants
+* Added AI-Assisted Development section to README
+
 [9.5.0] - 2025-11-29
 
 ### New Features
