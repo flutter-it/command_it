@@ -125,8 +125,6 @@ class MockCommand<TParam, TResult> extends Command<TParam, TResult> {
     _isRunning.value = true;
     runCount++;
     lastPassedValueToRun = param;
-    // ignore: avoid_print
-    print('Called Execute');
     if (returnValuesForNextRun != null) {
       returnValuesForNextRun!.map((entry) {
         if ((entry.isRunning || entry.hasError) &&
