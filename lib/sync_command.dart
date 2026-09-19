@@ -41,7 +41,10 @@ class CommandSync<TParam, TResult> extends Command<TParam, TResult> {
       assert(_func != null);
       assert(
         param != null || null is TParam,
-        'You passed a null value to the command ${_name ?? ''} that has a non-nullable type as TParam',
+        'Command ${_name ?? ''} expects a parameter of type $TParam, but '
+        'run() was called without one (or with null). If the command does not '
+        'take a parameter, create it with one of the ...NoParam factory '
+        'functions instead.',
       );
       return _func!(param as TParam);
     }

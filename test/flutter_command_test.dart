@@ -2135,6 +2135,62 @@ void main() {
       final result = await future;
       expect(result, null);
     });
+
+    test('Dispose while future is pending completes it with current value',
+        () async {
+      final command = Command.createAsyncNoParam<String>(
+        () async {
+          await Future<void>.delayed(const Duration(milliseconds: 200));
+          return 'result';
+        },
+        initialValue: 'initial',
+      );
+
+      final future = command.runAsync();
+
+      // Dispose before execution completes
+      await Future<void>.delayed(const Duration(milliseconds: 50));
+      command.dispose();
+
+      // Future should complete with the current value (non-nullable type)
+      final result = await future;
+      expect(result, 'initial');
+    });
+  });
+
+  group('Missing parameter assert', () {
+    test('sync command with non-nullable TParam called without argument', () {
+      final command = Command.createSyncNoResult<String>((s) {});
+      expect(
+        () => command.run(),
+        throwsA(
+          isA<AssertionError>().having(
+            (e) => e.message,
+            'message',
+            contains('expects a parameter of type String'),
+          ),
+        ),
+      );
+    });
+
+    test('async command with non-nullable TParam called without argument', () {
+      final command = Command.createAsyncNoResult<String>((s) async {});
+      expect(
+        () => command.run(),
+        throwsA(
+          isA<AssertionError>().having(
+            (e) => e.message,
+            'message',
+            contains('expects a parameter of type String'),
+          ),
+        ),
+      );
+    });
+
+    test('nullable TParam may be called without argument', () {
+      final command = Command.createSyncNoResult<String?>((s) {});
+      expect(() => command.run(), returnsNormally);
+    });
   });
 
   group('Command Utilities and Properties', () {

@@ -228,13 +228,21 @@ class TodoManager {
 
 ## AI-Assisted Development
 
-This package includes **AI skill files** in the `skills/` directory that help AI coding assistants
-(Claude Code, Cursor, GitHub Copilot, and others) generate correct code using command_it.
+This package ships an [Agent Skill](https://agentskills.io) for AI coding assistants
+(Claude Code, Cursor, GitHub Copilot, Codex, Gemini CLI and others) in `skills/command-it-expert/`.
+It teaches them the critical rules, common patterns and anti-patterns of command_it.
+Install it into your project with the official Dart skills tool:
 
-The skill files teach AI tools critical rules, common patterns, and anti-patterns specific to command_it.
-Included skills: `command-it-expert`, `listen-it-expert`, `flutter-architecture-expert`, `feed-datasource-expert`.
+```bash
+dart run skills@ get
+```
 
-They follow the [Agent Skills](https://github.com/agentskills) open standard.
+For the ecosystem-wide skills (architecture guidance, feed/data-source patterns, overview)
+and the skills of the other flutter_it packages run:
+
+```bash
+dart run skills@ add flutter-it/flutter_it
+```
 
 [Learn more about AI skills →](https://flutter-it.dev/misc/ai_skills)
 

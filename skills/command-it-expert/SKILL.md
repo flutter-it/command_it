@@ -62,6 +62,9 @@ command(param);                   // Callable class syntax (alias for run)
 final result = await command.runAsync(param);  // Await result (async commands only)
 ```
 
+- `run()` without an argument on a command whose `TParam` is non-nullable fails an assert (cannot be caught at compile time); use the `...NoParam` factories for parameterless commands.
+- `dispose()` while a `runAsync()` is pending completes the pending Future with the command's current `value` (9.5.2+).
+
 ## Observable Properties (all ValueListenable)
 
 ```dart
@@ -335,6 +338,10 @@ registerHandler(
   handler: (context, _, __) { ... },  // Only fires on success
 );
 ```
+
+## Testing
+
+Widget tests: `dispose()` finishes after a 50 ms delayed callback; end tests with `await tester.pumpWidget(const SizedBox()); await tester.pump(const Duration(milliseconds: 50));` to avoid pending-timer failures.
 
 ## Anti-Patterns
 

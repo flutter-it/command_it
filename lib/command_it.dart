@@ -355,11 +355,11 @@ abstract class Command<TParam, TResult> extends CustomValueNotifier<TResult> {
       TResult result;
 
       /// here we call the actual handler function
-      final FutureOr = _run(param);
-      if (FutureOr is Future) {
-        result = await FutureOr;
+      final futureOrResult = _run(param);
+      if (futureOrResult is Future) {
+        result = await futureOrResult;
       } else {
-        result = FutureOr;
+        result = futureOrResult;
       }
 
       if (_isDisposing) {
@@ -817,7 +817,7 @@ abstract class Command<TParam, TResult> extends CustomValueNotifier<TResult> {
       _errors.dispose();
       _handle?.dispose();
       if (!(_futureCompleter?.isCompleted ?? true)) {
-        _futureCompleter!.complete(null);
+        _futureCompleter!.complete(value);
         _futureCompleter = null;
       }
 
@@ -853,7 +853,9 @@ abstract class Command<TParam, TResult> extends CustomValueNotifier<TResult> {
 
   /// Runs an async Command and returns a Future that completes as soon as
   /// the Command completes. This is especially useful if you use a
-  /// RefreshIndicator
+  /// RefreshIndicator.
+  /// If the Command is disposed while a run is still pending, the returned
+  /// Future completes with the Command's current [value].
   Future<TResult> runAsync([TParam? param]) {
     assert(
       this is CommandAsync || this is UndoableCommand,
@@ -973,7 +975,7 @@ abstract class Command<TParam, TResult> extends CustomValueNotifier<TResult> {
         if (!_hasLocalErrorHandler) {
           assert(
             globalExceptionHandler != null,
-            'Command: $_name: Errorfilter returned ErrorReaction.firsLocalThenGlobalHandler, but no global handler is registered',
+            'Command: $_name: Errorfilter returned ErrorReaction.firstLocalThenGlobalHandler, but no global handler is registered',
           );
           callGlobal = true;
         }

@@ -1,5 +1,5 @@
 name: command_it
-description: command_it is a way to manage your state based on `ValueListenable` and the `Command` design pattern. It is a rebranding of flutter_command.
+description: Command pattern for Flutter that wraps sync/async functions as callable Command objects with automatic isRunning, error and result state exposed as ValueListenables.
 version: 9.5.1
 homepage: https://github.com/flutter-it/command_it
 
@@ -13,7 +13,7 @@ environment:
 dependencies:
   flutter:
     sdk: flutter
-  listen_it: ^5.3.0
+  listen_it: ^6.0.0
   stack_trace: ^1.11.0
   quiver: ^3.0.0 
 

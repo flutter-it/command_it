@@ -1,3 +1,13 @@
+[9.5.2] - 2026-09-19
+
+* `dispose()` while a `runAsync()` is pending now completes the pending Future with the current `value` instead of `null`, which crashed for non-nullable result types. Thanks to @homeserve-lsaudon (#21).
+* Clearer assert message when a command with a non-nullable `TParam` is run without a parameter (#19).
+* Removed a stray `print` in `MockCommand.run()` that broke `flutter test --reporter github` output. Thanks to @TheJanzap (#20).
+* Fixed typo in an error message. Thanks to @homeserve-lsaudon (#16).
+* Shortened package description and fixed analyzer infos reported by pub.dev.
+* Replaced the placeholder `LICENSE` file with the full MIT license text so pub.dev recognizes it.
+* `pubspec.lock` is no longer committed, following the Dart guidelines for library packages.
+
 [9.5.1] - 2026-02-19
 
 * Added AI skill files in `skills/` directory for AI coding assistants

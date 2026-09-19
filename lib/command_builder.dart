@@ -1,4 +1,4 @@
-part of command_it;
+part of './command_it.dart';
 
 class CommandBuilder<TParam, TResult> extends StatefulWidget {
   final Command<TParam, TResult> command;

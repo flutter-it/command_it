@@ -86,7 +86,7 @@ class MockCommand<TParam, TResult> extends Command<TParam, TResult> {
   }) {
     _commandResult
         .where((result) => result.hasData)
-        .listen((result, _) => value = result.data!);
+        .listen((result, _) => value = result.data as TResult);
 
     // Create ProgressHandle if requested for testing progress-aware commands
     if (withProgressHandle) {
@@ -125,8 +125,6 @@ class MockCommand<TParam, TResult> extends Command<TParam, TResult> {
     _isRunning.value = true;
     runCount++;
     lastPassedValueToRun = param;
-    // ignore: avoid_print
-    print('Called Execute');
     if (returnValuesForNextRun != null) {
       returnValuesForNextRun!.map((entry) {
         if ((entry.isRunning || entry.hasError) &&
