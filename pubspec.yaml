@@ -1,6 +1,6 @@
 name: command_it
 description: Command pattern for Flutter that wraps sync/async functions as callable Command objects with automatic isRunning, error and result state exposed as ValueListenables.
-version: 9.5.1
+version: 9.5.2
 homepage: https://github.com/flutter-it/command_it
 
 screenshots:
